@@ -1,4 +1,10 @@
-export type Column = { key: string; label: string; editable?: boolean }
+export type Column = {
+  key: string
+  label: string
+  editable?: boolean
+  editor?: 'text' | 'select'
+  options?: string[]
+}
 export type Row = { id: string; cells: Record<string, string>; meta?: unknown }
 export type Banner = { level: 'error' | 'info'; text: string }
 export type TableModel = { columns: Column[]; rows: Row[]; banner?: Banner }

@@ -1,8 +1,24 @@
 import type { FormatAdapter, Row, TableModel } from './types'
 
+const PLIST_TYPES = [
+  'string',
+  'integer',
+  'real',
+  'boolean',
+  'date',
+  'data',
+  'array',
+  'dictionary',
+] as const
+
 const columns = [
   { key: 'path', label: 'Path' },
-  { key: 'type', label: 'Type' },
+  {
+    key: 'type',
+    label: 'Type',
+    editor: 'select' as const,
+    options: [...PLIST_TYPES],
+  },
   { key: 'value', label: 'Value' },
 ]
 
