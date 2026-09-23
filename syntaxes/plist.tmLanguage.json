@@ -1,0 +1,9 @@
+{
+  "scopeName": "source.plist",
+  "patterns": [
+    { "name": "comment.block.plist", "begin": "<!--", "end": "-->" },
+    { "name": "meta.tag.plist", "match": "</?\\w+[^>]*>" },
+    { "name": "string.quoted.double.plist", "begin": "\"", "end": "\"", "patterns": [{ "name": "constant.character.escape.plist", "match": "\\\\." }] }
+  ],
+  "repository": {}
+}

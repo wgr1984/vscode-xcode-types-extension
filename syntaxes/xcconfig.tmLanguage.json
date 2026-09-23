@@ -1,0 +1,12 @@
+{
+  "scopeName": "source.xcconfig",
+  "patterns": [
+    { "name": "comment.line.double-slash.xcconfig", "match": "//.*$" },
+    { "name": "keyword.control.include.xcconfig", "match": "#include\\b" },
+    {
+      "name": "variable.other.xcconfig",
+      "match": "^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*(=)"
+    }
+  ],
+  "repository": {}
+}

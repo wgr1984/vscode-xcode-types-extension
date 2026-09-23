@@ -1,0 +1,15 @@
+{
+  "scopeName": "source.strings",
+  "patterns": [
+    { "name": "comment.block.strings", "begin": "/\\*", "end": "\\*/" },
+    { "name": "comment.line.double-slash.strings", "match": "//.*$" },
+    {
+      "name": "string.quoted.double.strings",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [{ "name": "constant.character.escape.strings", "match": "\\\\." }]
+    },
+    { "name": "keyword.operator.assignment.strings", "match": "=" }
+  ],
+  "repository": {}
+}
