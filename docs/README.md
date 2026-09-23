@@ -12,5 +12,7 @@ VS Code / Cursor extension: graphical + syntax editing for Xcode config/localiza
 | [design-draft.md](./design-draft.md) | Working section approvals |
 | [superpowers/specs/2026-09-23-xcode-types-extension-design.md](./superpowers/specs/2026-09-23-xcode-types-extension-design.md) | Formal design spec (approved) |
 | [superpowers/plans/2026-09-23-xcode-types-extension.md](./superpowers/plans/2026-09-23-xcode-types-extension.md) | Implementation plan |
+| [superpowers/specs/2026-09-23-plist-types-nesting-design.md](./superpowers/specs/2026-09-23-plist-types-nesting-design.md) | Plist type select + nesting (approved) |
+| [superpowers/plans/2026-09-23-plist-types-nesting.md](./superpowers/plans/2026-09-23-plist-types-nesting.md) | Plist nesting implementation plan |
 
-**Status:** plan ready. Pick execution mode to start code.
+**Status:** Phase 6 code done — F5 smoke `samples/demo.plist`.

@@ -56,3 +56,17 @@ Statuses: `todo` | `doing` | `done` | `blocked`
 | T5.1 | Package vsix | done | `xcode-types-0.0.1.vsix` |
 | T5.2 | Install smoke VS Code + Cursor | todo | you |
 | T5.3 | README for humans | todo | skip until smoke OK |
+
+## Phase 6 — Plist types + nesting
+
+Spec: [plist-types-nesting-design](./superpowers/specs/2026-09-23-plist-types-nesting-design.md)
+
+| ID | Task | Status | Notes |
+|----|------|--------|-------|
+| T6.0 | Design approve + plan | done | plan: `superpowers/plans/2026-09-23-plist-types-nesting.md` |
+| T6.1 | Column editor meta (`select` / options) | done | types.ts + Table.tsx |
+| T6.2 | Plist type select + boolean value | done | |
+| T6.3 | Flatten container rows + sort | done | |
+| T6.4 | Unflatten nest rebuild | done | |
+| T6.5 | Tests (nest / empty / boolean / sort) | done | |
+| T6.6 | Update D003 + sample plist | done | F5 smoke: you |
