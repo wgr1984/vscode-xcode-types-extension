@@ -43,4 +43,60 @@ describe('plistAdapter', () => {
     const model = plistAdapter.parse('<not-a-plist>')
     expect(model.banner?.level).toBe('error')
   })
+
+  const nested = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>kids</key>
+  <array>
+    <string>Ada</string>
+    <dict>
+      <key>age</key>
+      <integer>9</integer>
+    </dict>
+  </array>
+  <key>meta</key>
+  <dict>
+    <key>city</key>
+    <string>Berlin</string>
+  </dict>
+  <key>emptyArr</key>
+  <array/>
+  <key>emptyDict</key>
+  <dict/>
+  <key>on</key>
+  <true/>
+</dict>
+</plist>
+`
+
+  it('flattens containers, boolean, and sorts parent before children', () => {
+    const model = plistAdapter.parse(nested)
+    expect(model.banner).toBeUndefined()
+    const paths = model.rows.map((r) => r.cells.path)
+    expect(paths).toEqual([
+      'kids',
+      'kids[0]',
+      'kids[1]',
+      'kids[1].age',
+      'meta',
+      'meta.city',
+      'emptyArr',
+      'emptyDict',
+      'on',
+    ])
+    expect(model.rows.find((r) => r.cells.path === 'kids')?.cells.type).toBe('array')
+    expect(model.rows.find((r) => r.cells.path === 'meta')?.cells.type).toBe(
+      'dictionary',
+    )
+    expect(model.rows.find((r) => r.cells.path === 'emptyArr')?.cells).toMatchObject({
+      type: 'array',
+      value: '',
+    })
+    expect(model.rows.find((r) => r.cells.path === 'on')?.cells).toMatchObject({
+      type: 'boolean',
+      value: 'true',
+    })
+  })
 })
