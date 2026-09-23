@@ -233,32 +233,123 @@ function sortRows(rows: Row[]): Row[] {
     .map((x) => x.r)
 }
 
-function unflatten(rows: Row[]): PlistValue {
-  // ponytail: only flat string values under root dict keys (no nested rebuild from paths)
-  const entries: { key: string; value: PlistValue }[] = []
-  for (const r of rows) {
-    const path = r.cells.path ?? ''
-    const type = (r.cells.type ?? 'string') as PlistValue['type']
-    const val = r.cells.value ?? ''
-    if (path.includes('.') || path.includes('[')) {
-      // keep as top-level string key with full path — coarse but round-trips simple files
-      entries.push({
-        key: path,
-        value: leaf(type, val),
-      })
-      continue
-    }
-    entries.push({ key: path, value: leaf(type, val) })
-  }
-  return { type: 'dict', entries }
-}
-
 function leaf(type: string, val: string): PlistValue {
+  if (type === 'boolean') {
+    return val === 'true'
+      ? { type: 'true', value: 'true' }
+      : { type: 'false', value: 'false' }
+  }
   if (type === 'true' || type === 'false') return { type, value: type }
   if (type === 'integer' || type === 'real' || type === 'data' || type === 'date') {
     return { type, value: val }
   }
+  if (type === 'array') return { type: 'array', items: [] }
+  if (type === 'dictionary' || type === 'dict') return { type: 'dict', entries: [] }
   return { type: 'string', value: val }
+}
+
+function ensureChild(
+  parent: PlistValue,
+  seg: Seg,
+  hint?: 'array' | 'dict',
+): PlistValue {
+  if (seg.kind === 'key') {
+    if (parent.type !== 'dict') throw new Error(`path: expected dict for key ${seg.name}`)
+    let e = parent.entries.find((x) => x.key === seg.name)
+    if (!e) {
+      const empty: PlistValue =
+        hint === 'array' ? { type: 'array', items: [] } : { type: 'dict', entries: [] }
+      e = { key: seg.name, value: empty }
+      parent.entries.push(e)
+    }
+    return e.value
+  }
+  if (parent.type !== 'array') throw new Error(`path: expected array for index ${seg.n}`)
+  while (parent.items.length <= seg.n) {
+    parent.items.push(
+      hint === 'array' ? { type: 'array', items: [] } : { type: 'dict', entries: [] },
+    )
+  }
+  return parent.items[seg.n]
+}
+
+function setAt(root: PlistValue, segs: Seg[], value: PlistValue) {
+  if (segs.length === 0) {
+    throw new Error('path: empty path not allowed for set')
+  }
+  let cur = root
+  for (let i = 0; i < segs.length - 1; i++) {
+    const next = segs[i + 1]
+    const hint = next.kind === 'index' ? 'array' : 'dict'
+    cur = ensureChild(cur, segs[i], hint)
+  }
+  const last = segs[segs.length - 1]
+  if (last.kind === 'key') {
+    if (cur.type !== 'dict') throw new Error('path: expected dict')
+    const idx = cur.entries.findIndex((e) => e.key === last.name)
+    if (idx >= 0) cur.entries[idx].value = value
+    else cur.entries.push({ key: last.name, value })
+  } else {
+    if (cur.type !== 'array') throw new Error('path: expected array')
+    while (cur.items.length <= last.n) {
+      cur.items.push({ type: 'string', value: '' })
+    }
+    cur.items[last.n] = value
+  }
+}
+
+function ensurePathContainer(
+  root: PlistValue,
+  segs: Seg[],
+  kind: 'array' | 'dict',
+) {
+  let cur = root
+  for (let i = 0; i < segs.length - 1; i++) {
+    const next = segs[i + 1]
+    const hint = next.kind === 'index' ? 'array' : 'dict'
+    cur = ensureChild(cur, segs[i], hint)
+  }
+  const last = segs[segs.length - 1]
+  const empty: PlistValue =
+    kind === 'array' ? { type: 'array', items: [] } : { type: 'dict', entries: [] }
+  if (last.kind === 'key') {
+    if (cur.type !== 'dict') throw new Error('path: expected dict')
+    const e = cur.entries.find((x) => x.key === last.name)
+    if (!e) cur.entries.push({ key: last.name, value: empty })
+    else if (e.value.type !== (kind === 'array' ? 'array' : 'dict')) e.value = empty
+  } else {
+    if (cur.type !== 'array') throw new Error('path: expected array')
+    while (cur.items.length <= last.n) cur.items.push(empty)
+    const existing = cur.items[last.n]
+    if (existing.type !== (kind === 'array' ? 'array' : 'dict')) cur.items[last.n] = empty
+  }
+}
+
+function unflatten(rows: Row[]): PlistValue {
+  const paths = rows.map((r) => r.cells.path ?? '')
+  const seen = new Set<string>()
+  for (const p of paths) {
+    if (!p) throw new Error('path: empty path')
+    if (seen.has(p)) throw new Error(`duplicate path: ${p}`)
+    seen.add(p)
+    if (parsePath(p) == null) throw new Error(`bad path: ${p}`)
+  }
+
+  const root: PlistValue = { type: 'dict', entries: [] }
+  const ordered = sortRows(rows)
+
+  for (const r of ordered) {
+    const path = r.cells.path ?? ''
+    const segs = parsePath(path)!
+    const type = r.cells.type ?? 'string'
+    const val = r.cells.value ?? ''
+    if (type === 'array' || type === 'dictionary') {
+      ensurePathContainer(root, segs, type === 'array' ? 'array' : 'dict')
+    } else {
+      setAt(root, segs, leaf(type, val))
+    }
+  }
+  return root
 }
 
 function escapeXml(s: string): string {
@@ -271,6 +362,7 @@ function escapeXml(s: string): string {
 
 function serializeValue(v: PlistValue, indent: string): string {
   if (v.type === 'dict') {
+    if (v.entries.length === 0) return `${indent}<dict/>`
     const body = v.entries
       .map(
         (e) =>
@@ -280,6 +372,7 @@ function serializeValue(v: PlistValue, indent: string): string {
     return `${indent}<dict>\n${body}\n${indent}</dict>`
   }
   if (v.type === 'array') {
+    if (v.items.length === 0) return `${indent}<array/>`
     const body = v.items.map((item) => serializeValue(item, indent + '  ')).join('\n')
     return `${indent}<array>\n${body}\n${indent}</array>`
   }

@@ -99,4 +99,42 @@ describe('plistAdapter', () => {
       value: 'true',
     })
   })
+
+  it('round-trips nested dict/array/empty/boolean', () => {
+    const out = plistAdapter.serialize(plistAdapter.parse(nested))
+    const again = plistAdapter.parse(out)
+    expect(again.rows.map((r) => r.cells.path)).toEqual([
+      'kids',
+      'kids[0]',
+      'kids[1]',
+      'kids[1].age',
+      'meta',
+      'meta.city',
+      'emptyArr',
+      'emptyDict',
+      'on',
+    ])
+    expect(again.rows.find((r) => r.cells.path === 'kids[0]')?.cells.value).toBe(
+      'Ada',
+    )
+    expect(again.rows.find((r) => r.cells.path === 'kids[1].age')?.cells.value).toBe(
+      '9',
+    )
+    expect(again.rows.find((r) => r.cells.path === 'on')?.cells.value).toBe('true')
+    expect(out).toContain('<array/>')
+    expect(out).toContain('<true/>')
+  })
+
+  it('serialize throws on duplicate path', () => {
+    const { columns } = plistAdapter.parse(sample)
+    expect(() =>
+      plistAdapter.serialize({
+        columns,
+        rows: [
+          { id: '1', cells: { path: 'a', type: 'string', value: '1' } },
+          { id: '2', cells: { path: 'a', type: 'string', value: '2' } },
+        ],
+      }),
+    ).toThrow(/duplicate/i)
+  })
 })
