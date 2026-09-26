@@ -80,7 +80,7 @@ Spec: [raw-edit-mode-design](./superpowers/specs/2026-09-27-raw-edit-mode-design
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
 | T8.0 | Design approve + plan | done | plan: `superpowers/plans/2026-09-27-raw-edit-mode.md` |
-| T8.1 | App toggle + messages (`editRaw`, text on init) | todo | |
-| T8.2 | RawEditor (textarea + Prism mirror) | todo | |
-| T8.3 | Host write + validate path | todo | always write |
-| T8.4 | Manual F5 smoke | todo | you |
+| T8.1 | App toggle + messages (`editRaw`, text on init) | done | |
+| T8.2 | RawEditor (textarea + Prism mirror) | done | |
+| T8.3 | Host write + validate path | done | always write |
+| T8.4 | Manual F5 smoke | todo | you: toggle, break XML, fix, table |
