@@ -3,7 +3,10 @@ import { getAdapter } from '../adapters/registry'
 import type { Row, TableModel } from '../adapters/types'
 import { getWebviewHtml } from './webviewHtml'
 
-type WebToHost = { type: 'ready' } | { type: 'edit'; rows: Row[] }
+type WebToHost =
+  | { type: 'ready' }
+  | { type: 'edit'; rows: Row[] }
+  | { type: 'editRaw'; text: string }
 
 const EXT_TO_LANG: Record<string, string> = {
   '.plist': 'plist',
@@ -50,7 +53,13 @@ export class TableEditorProvider implements vscode.CustomTextEditorProvider {
     let applying = false
 
     const send = (type: 'init' | 'update', model: TableModel) => {
-      webviewPanel.webview.postMessage({ type, model })
+      const languageId = resolveLanguageId(document)
+      webviewPanel.webview.postMessage({
+        type,
+        model,
+        text: document.getText(),
+        languageId,
+      })
     }
 
     const parseDoc = (): TableModel => {
@@ -97,11 +106,26 @@ export class TableEditorProvider implements vscode.CustomTextEditorProvider {
       applying = false
     }
 
+    const applyRaw = async (text: string) => {
+      applying = true
+      const edit = new vscode.WorkspaceEdit()
+      const full = new vscode.Range(
+        document.positionAt(0),
+        document.positionAt(document.getText().length),
+      )
+      edit.replace(document.uri, full, text)
+      await vscode.workspace.applyEdit(edit)
+      applying = false
+      send('update', parseDoc())
+    }
+
     webviewPanel.webview.onDidReceiveMessage(async (msg: WebToHost) => {
       if (msg.type === 'ready') {
         send('init', parseDoc())
       } else if (msg.type === 'edit') {
         await applyRows(msg.rows)
+      } else if (msg.type === 'editRaw') {
+        await applyRaw(msg.text)
       }
     })
 
