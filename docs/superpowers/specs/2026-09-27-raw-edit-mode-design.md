@@ -1,7 +1,7 @@
 # Raw Edit Mode — Design Spec
 
 **Date:** 2026-09-27  
-**Status:** pending user review  
+**Status:** approved 2026-09-27  
 **Branch / worktree:** `feature/raw-edit-mode`
 
 ## Goal
