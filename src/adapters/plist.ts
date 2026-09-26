@@ -325,6 +325,40 @@ function ensurePathContainer(
   }
 }
 
+function arrayIndexNeeded(
+  pathPrefix: string,
+  index: number,
+  explicit: Set<string>,
+): boolean {
+  const p = `${pathPrefix}[${index}]`
+  for (const e of explicit) {
+    if (e === p || e.startsWith(p + '.') || e.startsWith(p + '[')) return true
+  }
+  return false
+}
+
+/** Drop sparse array holes (e.g. deleted middle index) so they don't serialize as empty. */
+function densify(v: PlistValue, path: string, explicit: Set<string>): PlistValue {
+  if (v.type === 'dict') {
+    return {
+      type: 'dict',
+      entries: v.entries.map((e) => ({
+        key: e.key,
+        value: densify(e.value, path ? `${path}.${e.key}` : e.key, explicit),
+      })),
+    }
+  }
+  if (v.type === 'array') {
+    const items: PlistValue[] = []
+    for (let i = 0; i < v.items.length; i++) {
+      if (!arrayIndexNeeded(path, i, explicit)) continue
+      items.push(densify(v.items[i], `${path}[${i}]`, explicit))
+    }
+    return { type: 'array', items }
+  }
+  return v
+}
+
 function unflatten(rows: Row[]): PlistValue {
   const paths = rows.map((r) => r.cells.path ?? '')
   const seen = new Set<string>()
@@ -349,7 +383,7 @@ function unflatten(rows: Row[]): PlistValue {
       setAt(root, segs, leaf(type, val))
     }
   }
-  return root
+  return densify(root, '', seen)
 }
 
 function escapeXml(s: string): string {

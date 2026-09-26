@@ -137,4 +137,26 @@ describe('plistAdapter', () => {
       }),
     ).toThrow(/duplicate/i)
   })
+
+  it('compacts sparse array indices on serialize', () => {
+    const { columns } = plistAdapter.parse(sample)
+    const out = plistAdapter.serialize({
+      columns,
+      rows: [
+        { id: '0', cells: { path: 'test', type: 'array', value: '' } },
+        { id: '1', cells: { path: 'test[0]', type: 'string', value: 'a' } },
+        { id: '2', cells: { path: 'test[2]', type: 'string', value: 'c' } },
+      ],
+    })
+    const again = plistAdapter.parse(out)
+    expect(again.rows.map((r) => r.cells.path)).toEqual([
+      'test',
+      'test[0]',
+      'test[1]',
+    ])
+    expect(again.rows.find((r) => r.cells.path === 'test[1]')?.cells.value).toBe(
+      'c',
+    )
+    expect(out).not.toMatch(/<string><\/string>\s*<string>c<\/string>/)
+  })
 })

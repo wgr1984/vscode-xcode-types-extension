@@ -4,8 +4,18 @@
   "strings": {
     "hello": {
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Hello" } },
-        "de": { "stringUnit": { "state": "translated", "value": "Hallo" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hello"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hallo"
+          }
+        }
       }
     }
   }

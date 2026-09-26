@@ -15,5 +15,10 @@
   <array/>
   <key>enabled</key>
   <true/>
+  <key>test</key>
+  <array>
+    <string>test</string>
+    <string>test2</string>
+  </array>
 </dict>
 </plist>

@@ -1,2 +1,3 @@
 PRODUCT_NAME = Demo
 SWIFT_VERSION = 5.0
+ = 

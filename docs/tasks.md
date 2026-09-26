@@ -70,3 +70,5 @@ Spec: [plist-types-nesting-design](./superpowers/specs/2026-09-23-plist-types-ne
 | T6.4 | Unflatten nest rebuild | done | |
 | T6.5 | Tests (nest / empty / boolean / sort) | done | |
 | T6.6 | Update D003 + sample plist | done | F5 smoke: you |
+| T6.7 | Fix empty-path type wipe + Add child | done | `+ child` on array/dict rows |
+| T6.8 | Fix mid-array delete ghost hole | done | renumber + densify |
