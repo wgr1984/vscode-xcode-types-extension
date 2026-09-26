@@ -4,35 +4,96 @@
   "description": "Table editors and highlighting for plist, strings, xcstrings, xcconfig",
   "version": "0.0.1",
   "publisher": "local",
-  "engines": { "vscode": "^1.85.0" },
-  "categories": ["Programming Languages", "Other"],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
     "languages": [
-      { "id": "plist", "aliases": ["Property List"], "extensions": [".plist"] },
-      { "id": "strings", "aliases": ["Strings"], "extensions": [".strings"] },
-      { "id": "xcstrings", "aliases": ["String Catalog"], "extensions": [".xcstrings"] },
-      { "id": "xcconfig", "aliases": ["Xcode Config"], "extensions": [".xcconfig"] }
+      {
+        "id": "plist",
+        "aliases": [
+          "Property List"
+        ],
+        "extensions": [
+          ".plist"
+        ]
+      },
+      {
+        "id": "strings",
+        "aliases": [
+          "Strings"
+        ],
+        "extensions": [
+          ".strings"
+        ]
+      },
+      {
+        "id": "xcstrings",
+        "aliases": [
+          "String Catalog"
+        ],
+        "extensions": [
+          ".xcstrings"
+        ]
+      },
+      {
+        "id": "xcconfig",
+        "aliases": [
+          "Xcode Config"
+        ],
+        "extensions": [
+          ".xcconfig"
+        ]
+      }
     ],
     "customEditors": [
       {
         "viewType": "xcodeTypes.table",
         "displayName": "Xcode Types Table",
         "selector": [
-          { "filenamePattern": "*.plist" },
-          { "filenamePattern": "*.strings" },
-          { "filenamePattern": "*.xcstrings" },
-          { "filenamePattern": "*.xcconfig" }
+          {
+            "filenamePattern": "*.plist"
+          },
+          {
+            "filenamePattern": "*.strings"
+          },
+          {
+            "filenamePattern": "*.xcstrings"
+          },
+          {
+            "filenamePattern": "*.xcconfig"
+          }
         ],
         "priority": "default"
       }
     ],
     "grammars": [
-      { "language": "plist", "scopeName": "source.plist", "path": "./syntaxes/plist.tmLanguage.json" },
-      { "language": "strings", "scopeName": "source.strings", "path": "./syntaxes/strings.tmLanguage.json" },
-      { "language": "xcstrings", "scopeName": "source.xcstrings", "path": "./syntaxes/xcstrings.tmLanguage.json" },
-      { "language": "xcconfig", "scopeName": "source.xcconfig", "path": "./syntaxes/xcconfig.tmLanguage.json" }
+      {
+        "language": "plist",
+        "scopeName": "source.plist",
+        "path": "./syntaxes/plist.tmLanguage.json"
+      },
+      {
+        "language": "strings",
+        "scopeName": "source.strings",
+        "path": "./syntaxes/strings.tmLanguage.json"
+      },
+      {
+        "language": "xcstrings",
+        "scopeName": "source.xcstrings",
+        "path": "./syntaxes/xcstrings.tmLanguage.json"
+      },
+      {
+        "language": "xcconfig",
+        "scopeName": "source.xcconfig",
+        "path": "./syntaxes/xcconfig.tmLanguage.json"
+      }
     ]
   },
   "scripts": {
@@ -43,6 +104,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "@types/prismjs": "^1.26.6",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
     "@types/vscode": "^1.85.0",
@@ -55,5 +117,8 @@
     "typescript": "^5.3.3",
     "vite": "^5.0.12",
     "vitest": "^1.2.1"
+  },
+  "dependencies": {
+    "prismjs": "^1.30.0"
   }
 }
