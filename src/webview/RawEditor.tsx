@@ -1,9 +1,50 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Prism from 'prismjs'
 import 'prismjs/components/prism-markup'
 import 'prismjs/components/prism-json'
 import 'prismjs/components/prism-properties'
 import { prismLangFor } from './prismLang'
+
+/** Hardcoded — VS Code webview CSS vars often empty (fallback ignored). */
+const TOKEN_COLOR: Record<string, string> = {
+  comment: '#6a9955',
+  prolog: '#6a9955',
+  doctype: '#6a9955',
+  cdata: '#6a9955',
+  punctuation: '#d4d4d4',
+  property: '#9cdcfe',
+  tag: '#569cd6',
+  boolean: '#569cd6',
+  number: '#b5cea8',
+  constant: '#9cdcfe',
+  symbol: '#9cdcfe',
+  selector: '#d7ba7d',
+  'attr-name': '#9cdcfe',
+  string: '#ce9178',
+  char: '#ce9178',
+  builtin: '#ce9178',
+  inserted: '#ce9178',
+  operator: '#d4d4d4',
+  entity: '#569cd6',
+  url: '#ce9178',
+  atrule: '#569cd6',
+  'attr-value': '#ce9178',
+  keyword: '#569cd6',
+  function: '#dcdcaa',
+  'class-name': '#4ec9b0',
+  regex: '#d16969',
+  important: '#569cd6',
+  variable: '#9cdcfe',
+}
+
+/** Prism emits class="token foo bar"; paint via inline style (beats webview CSS). */
+export function colorizePrismHtml(html: string): string {
+  return html.replace(/class="token([^"]*)"/g, (full, classes: string) => {
+    const kinds = classes.trim().split(/\s+/).filter(Boolean)
+    const color = kinds.map((k) => TOKEN_COLOR[k]).find(Boolean) ?? '#d4d4d4'
+    return `${full} style="color:${color}"`
+  })
+}
 
 type Props = {
   text: string
@@ -22,14 +63,30 @@ export function RawEditor({ text, languageId, onChange }: Props) {
     if (!dirty.current) setLocal(text)
   }, [text])
 
+  useLayoutEffect(() => {
+    const ta = taRef.current
+    if (!ta) return
+    // VS Code webview injects textarea color !important — beat it.
+    ta.style.setProperty('color', 'transparent', 'important')
+    ta.style.setProperty('-webkit-text-fill-color', 'transparent', 'important')
+    ta.style.setProperty(
+      'caret-color',
+      'var(--vscode-editorCursor-foreground, #aeafad)',
+      'important',
+    )
+  }, [])
+
   const lang = prismLangFor(languageId)
 
   const html = useMemo(() => {
     const code = local.endsWith('\n') ? local : local + '\n'
+    let raw: string
     if (lang === 'none' || !Prism.languages[lang]) {
-      return Prism.util.encode(code) as string
+      raw = Prism.util.encode(code) as string
+    } else {
+      raw = Prism.highlight(code, Prism.languages[lang], lang)
     }
-    return Prism.highlight(code, Prism.languages[lang], lang)
+    return colorizePrismHtml(raw)
   }, [local, lang])
 
   const syncScroll = () => {
@@ -64,7 +121,7 @@ export function RawEditor({ text, languageId, onChange }: Props) {
       <pre
         ref={preRef}
         aria-hidden
-        className={`${shared} pointer-events-none text-[var(--vscode-editor-foreground)]`}
+        className={`${shared} pointer-events-none text-[#d4d4d4]`}
         dangerouslySetInnerHTML={{ __html: html }}
       />
       <textarea
