@@ -72,3 +72,15 @@ Spec: [plist-types-nesting-design](./superpowers/specs/2026-09-23-plist-types-ne
 | T6.6 | Update D003 + sample plist | done | F5 smoke: you |
 | T6.7 | Fix empty-path type wipe + Add child | done | `+ child` on array/dict rows |
 | T6.8 | Fix mid-array delete ghost hole | done | renumber + densify |
+
+## Phase 8 — Raw edit mode
+
+Spec: [raw-edit-mode-design](./superpowers/specs/2026-09-27-raw-edit-mode-design.md)
+
+| ID | Task | Status | Notes |
+|----|------|--------|-------|
+| T8.0 | Design approve + plan | doing | §§1–3 OK; awaiting spec review |
+| T8.1 | App toggle + messages (`editRaw`, text on init) | todo | |
+| T8.2 | RawEditor (textarea + Prism mirror) | todo | |
+| T8.3 | Host write + validate path | todo | always write |
+| T8.4 | Manual F5 smoke | todo | you |
