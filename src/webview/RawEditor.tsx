@@ -5,8 +5,6 @@ import 'prismjs/components/prism-json'
 import 'prismjs/components/prism-properties'
 import { prismLangFor } from './prismLang'
 
-// ponytail: no Prism theme CSS — rely on unstyled tokens + editor fg; add theme later if needed
-
 type Props = {
   text: string
   languageId: string

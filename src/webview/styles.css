@@ -10,3 +10,47 @@ body {
   color: var(--vscode-foreground);
   background: var(--vscode-editor-background);
 }
+
+/* Prism tokens — map to editor theme colors */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: var(--vscode-editorLineNumber-foreground, #6a9955);
+}
+.token.punctuation {
+  color: var(--vscode-editor-foreground);
+}
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol {
+  color: var(--vscode-symbolIcon-propertyForeground, #9cdcfe);
+}
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: var(--vscode-symbolIcon-stringForeground, #ce9178);
+}
+.token.operator,
+.token.entity,
+.token.url,
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+  color: var(--vscode-symbolIcon-keywordForeground, #569cd6);
+}
+.token.function,
+.token.class-name {
+  color: var(--vscode-symbolIcon-functionForeground, #dcdcaa);
+}
+.token.regex,
+.token.important,
+.token.variable {
+  color: var(--vscode-symbolIcon-variableForeground, #d16969);
+}
