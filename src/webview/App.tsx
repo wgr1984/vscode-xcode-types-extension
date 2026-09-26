@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Row, TableModel } from '../adapters/types'
 import { Table } from './Table'
 
@@ -10,10 +10,13 @@ type HostMsg =
 
 export function App() {
   const [model, setModel] = useState<TableModel | null>(null)
+  const editingRef = useRef(false)
 
   useEffect(() => {
     const handler = (event: MessageEvent<HostMsg>) => {
       const msg = event.data
+      // keep local order/focus while typing in a cell
+      if (msg.type === 'update' && editingRef.current) return
       if (msg.type === 'init' || msg.type === 'update') {
         setModel(msg.model)
       }
@@ -52,6 +55,11 @@ export function App() {
         rows={model.rows}
         disabled={disabled}
         onChange={onChange}
+        onEditingChange={(v) => {
+          editingRef.current = v
+          // own writes skip doc→webview; reparse once focus leaves table
+          if (!v) vscodeApi.postMessage({ type: 'refresh' })
+        }}
       />
     </div>
   )

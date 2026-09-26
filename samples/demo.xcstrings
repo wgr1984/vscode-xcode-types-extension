@@ -2,18 +2,38 @@
   "sourceLanguage": "en",
   "version": "1.0",
   "strings": {
+    "123": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "123"
+          }
+        }
+      }
+    },
     "hello": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hello"
+            "value": ""
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Hallo"
+          }
+        }
+      }
+    },
+    "abc": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ABC"
           }
         }
       }

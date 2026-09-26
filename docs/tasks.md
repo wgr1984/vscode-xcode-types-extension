@@ -72,3 +72,10 @@ Spec: [plist-types-nesting-design](./superpowers/specs/2026-09-23-plist-types-ne
 | T6.6 | Update D003 + sample plist | done | F5 smoke: you |
 | T6.7 | Fix empty-path type wipe + Add child | done | `+ child` on array/dict rows |
 | T6.8 | Fix mid-array delete ghost hole | done | renumber + densify |
+
+## Phase 7 — Table draft rows
+
+| ID | Task | Status | Notes |
+|----|------|--------|-------|
+| T7.1 | xcconfig/xcstrings Add row vanish | done | keep empty-key drafts; defer applying flag |
+| T7.2 | No row resort/remount while editing | done | hold updates while focused; refresh on blur |

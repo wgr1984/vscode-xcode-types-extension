@@ -20,5 +20,7 @@
     <string>test</string>
     <string>test2</string>
   </array>
+  <key>a</key>
+  <string></string>
 </dict>
 </plist>

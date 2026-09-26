@@ -5,6 +5,7 @@ type Props = {
   rows: Row[]
   disabled?: boolean
   onChange: (rows: Row[]) => void
+  onEditingChange?: (editing: boolean) => void
 }
 
 /** True only when child is under parent path. Empty parent → no descendants (avoids wipe). */
@@ -41,7 +42,13 @@ function nextDictKey(rows: Row[], parentPath: string): string {
   }
 }
 
-export function Table({ columns, rows, disabled, onChange }: Props) {
+export function Table({
+  columns,
+  rows,
+  disabled,
+  onChange,
+  onEditingChange,
+}: Props) {
   const hasTypeCol = columns.some((c) => c.key === 'type')
 
   const updateCell = (rowId: string, key: string, value: string) => {
@@ -192,7 +199,15 @@ export function Table({ columns, rows, disabled, onChange }: Props) {
   }
 
   return (
-    <div className="p-3">
+    <div
+      className="p-3"
+      onFocus={() => onEditingChange?.(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+          onEditingChange?.(false)
+        }
+      }}
+    >
       <div className="mb-2 flex gap-2">
         <button
           type="button"

@@ -3,7 +3,10 @@ import { getAdapter } from '../adapters/registry'
 import type { Row, TableModel } from '../adapters/types'
 import { getWebviewHtml } from './webviewHtml'
 
-type WebToHost = { type: 'ready' } | { type: 'edit'; rows: Row[] }
+type WebToHost =
+  | { type: 'ready' }
+  | { type: 'edit'; rows: Row[] }
+  | { type: 'refresh' }
 
 const EXT_TO_LANG: Record<string, string> = {
   '.plist': 'plist',
@@ -47,7 +50,19 @@ export class TableEditorProvider implements vscode.CustomTextEditorProvider {
       this.context.extensionUri,
     )
 
-    let applying = false
+    // Own edits must not re-push parse → webview (id remount + key reorder).
+    // One WorkspaceEdit can emit multiple change events — match by written text.
+    const recentOwnWrites = new Set<string>()
+    const ownWriteTimers = new Set<ReturnType<typeof setTimeout>>()
+
+    const rememberOwnWrite = (text: string) => {
+      recentOwnWrites.add(text)
+      const t = setTimeout(() => {
+        recentOwnWrites.delete(text)
+        ownWriteTimers.delete(t)
+      }, 1000)
+      ownWriteTimers.add(t)
+    }
 
     const send = (type: 'init' | 'update', model: TableModel) => {
       webviewPanel.webview.postMessage({ type, model })
@@ -86,7 +101,7 @@ export class TableEditorProvider implements vscode.CustomTextEditorProvider {
         )
         return
       }
-      applying = true
+      rememberOwnWrite(text)
       const edit = new vscode.WorkspaceEdit()
       const full = new vscode.Range(
         document.positionAt(0),
@@ -94,7 +109,6 @@ export class TableEditorProvider implements vscode.CustomTextEditorProvider {
       )
       edit.replace(document.uri, full, text)
       await vscode.workspace.applyEdit(edit)
-      applying = false
     }
 
     webviewPanel.webview.onDidReceiveMessage(async (msg: WebToHost) => {
@@ -102,15 +116,22 @@ export class TableEditorProvider implements vscode.CustomTextEditorProvider {
         send('init', parseDoc())
       } else if (msg.type === 'edit') {
         await applyRows(msg.rows)
+      } else if (msg.type === 'refresh') {
+        send('update', parseDoc())
       }
     })
 
     const changeSub = vscode.workspace.onDidChangeTextDocument((e) => {
       if (e.document.uri.toString() !== document.uri.toString()) return
-      if (applying) return
+      if (recentOwnWrites.has(e.document.getText())) return
+      recentOwnWrites.clear()
       send('update', parseDoc())
     })
 
-    webviewPanel.onDidDispose(() => changeSub.dispose())
+    webviewPanel.onDidDispose(() => {
+      for (const t of ownWriteTimers) clearTimeout(t)
+      ownWriteTimers.clear()
+      changeSub.dispose()
+    })
   }
 }

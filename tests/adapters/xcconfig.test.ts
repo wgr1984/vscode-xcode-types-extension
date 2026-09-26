@@ -23,4 +23,18 @@ describe('xcconfigAdapter', () => {
     const model = xcconfigAdapter.parse(`not an assignment`)
     expect(model.banner?.level).toBe('error')
   })
+
+  it('round-trips empty-key draft row', () => {
+    const model = {
+      columns: [
+        { key: 'key', label: 'Key' },
+        { key: 'value', label: 'Value' },
+      ],
+      rows: [{ id: 'new-1', cells: { key: '', value: '' } }],
+    }
+    const out = xcconfigAdapter.serialize(model)
+    const again = xcconfigAdapter.parse(out)
+    expect(again.rows).toHaveLength(1)
+    expect(again.rows[0].cells).toEqual({ key: '', value: '' })
+  })
 })

@@ -27,10 +27,7 @@ export const xcconfigAdapter: FormatAdapter = {
       }
       const key = trimmed.slice(0, eq).trim()
       const value = trimmed.slice(eq + 1).trim()
-      if (!key) {
-        bad = true
-        continue
-      }
+      // empty key = draft row from Add; keep so round-trip doesn't wipe UI
       rows.push({ id: String(i++), cells: { key, value } })
     }
 

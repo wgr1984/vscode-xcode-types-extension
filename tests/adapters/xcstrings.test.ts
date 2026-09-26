@@ -40,4 +40,22 @@ describe('xcstringsAdapter', () => {
     const model = xcstringsAdapter.parse('{')
     expect(model.banner?.level).toBe('error')
   })
+
+  it('round-trips empty-key draft row', () => {
+    const model = {
+      columns: [
+        { key: 'key', label: 'Key' },
+        { key: 'locale', label: 'Locale' },
+        { key: 'value', label: 'Value' },
+        { key: 'state', label: 'State' },
+      ],
+      rows: [
+        { id: 'new-1', cells: { key: '', locale: '', value: '', state: '' } },
+      ],
+    }
+    const out = xcstringsAdapter.serialize(model)
+    const again = xcstringsAdapter.parse(out)
+    expect(again.rows).toHaveLength(1)
+    expect(again.rows[0].cells.key).toBe('')
+  })
 })

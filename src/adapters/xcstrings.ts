@@ -78,7 +78,7 @@ export const xcstringsAdapter: FormatAdapter = {
     for (const r of model.rows) {
       const key = r.cells.key ?? ''
       const locale = r.cells.locale ?? ''
-      if (!key) continue
+      // empty key = draft row from Add; keep entry so round-trip doesn't wipe UI
       if (!strings[key]) strings[key] = { localizations: {} }
       if (!strings[key].localizations) strings[key].localizations = {}
       if (locale) {
