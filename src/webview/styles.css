@@ -54,3 +54,10 @@ body {
 .token.variable {
   color: var(--vscode-symbolIcon-variableForeground, #d16969);
 }
+
+/* raw editor: textarea must not paint over Prism colors */
+.raw-editor__textarea {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  caret-color: var(--vscode-editorCursor-foreground, #aeafad);
+}

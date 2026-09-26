@@ -73,7 +73,7 @@ export function RawEditor({ text, languageId, onChange }: Props) {
         spellCheck={false}
         onScroll={syncScroll}
         onChange={(e) => emit(e.target.value)}
-        className={`${shared} resize-none bg-transparent text-transparent caret-[var(--vscode-editorCursor-foreground)] outline-none`}
+        className={`${shared} raw-editor__textarea resize-none bg-transparent outline-none`}
       />
     </div>
   )
