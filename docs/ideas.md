@@ -58,3 +58,17 @@ Round-trip must preserve enough structure that users don’t lose comments where
 - Binary `.plist` → refuse or convert via `plutil` (macOS only). Decision needed.
 - Large `.xcstrings` → virtualize table rows.
 - Webview CSP + Vite asset loading — follow VS Code webview Vite recipe once.
+
+## Backlog
+
+### Workspace diagnostics (deferred)
+
+**Now:** parse → `issues` only for docs opened in custom editor (open / change). Enough for edit UX.
+
+**Later (if pain):** scan workspace for `*.{plist,strings,xcconfig,xcstrings}` without opening each file.
+
+- Pattern like ESLint/tsserver “advanced”: `findFiles` + adapters → `DiagnosticCollection.set(uri, …)`; `FileSystemWatcher` refresh.
+- Opt-in setting (default off) — avoid activate cost / big catalogs / binary plists.
+- Skip until users miss broken files that stay closed.
+
+Ref: VS Code “Provide Diagnostics” basic = open editors; advanced = whole folder.

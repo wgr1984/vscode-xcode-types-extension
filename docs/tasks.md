@@ -93,3 +93,9 @@ Spec: [raw-edit-mode-design](./superpowers/specs/2026-09-27-raw-edit-mode-design
 | T8.4 | Manual F5 smoke | todo | you: toggle, break XML, fix, table |
 | T8.5 | Plist XML parse issues (underline) | done | trailing junk + fail offset |
 | T8.6 | xcstrings JSON parse issues | done | SyntaxError line/col |
+
+## Phase 9 — Backlog (deferred)
+
+| ID | Task | Status | Notes |
+|----|------|--------|-------|
+| T9.1 | Workspace diagnostics scan | todo | opt-in; see [ideas § Backlog](./ideas.md#workspace-diagnostics-deferred) |
