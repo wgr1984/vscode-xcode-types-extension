@@ -144,12 +144,41 @@ export class XcassetsEditorProvider implements vscode.CustomEditorProvider<Xcass
   }
 }
 
+/** Walk up from a URI to the enclosing `.xcassets` folder. */
+export function resolveCatalogUri(uri: vscode.Uri): vscode.Uri | undefined {
+  let cur = uri
+  for (let i = 0; i < 12; i++) {
+    const name = cur.path.split('/').pop() ?? ''
+    if (name.endsWith('.xcassets')) return cur
+    const parent = vscode.Uri.joinPath(cur, '..')
+    if (parent.path === cur.path) break
+    cur = parent
+  }
+  return undefined
+}
+
+/** Explorer keybindings often omit the URI — copy path briefly. */
+async function uriFromExplorerFocus(): Promise<vscode.Uri | undefined> {
+  const previous = await vscode.env.clipboard.readText()
+  try {
+    await vscode.commands.executeCommand('copyFilePath')
+    const text = (await vscode.env.clipboard.readText()).trim()
+    if (!text || text === previous.trim()) return undefined
+    return vscode.Uri.file(text)
+  } catch {
+    return undefined
+  } finally {
+    await vscode.env.clipboard.writeText(previous)
+  }
+}
+
 export function registerOpenXcassetsCommand(): vscode.Disposable {
   return vscode.commands.registerCommand(
     'xcodeTypes.openXcassets',
     async (uri?: vscode.Uri) => {
       const target =
         uri ??
+        (await uriFromExplorerFocus()) ??
         vscode.window.activeTextEditor?.document.uri ??
         (await vscode.window.showOpenDialog({
           canSelectFolders: true,
@@ -157,16 +186,27 @@ export function registerOpenXcassetsCommand(): vscode.Disposable {
           openLabel: 'Open Asset Catalog',
         }))?.[0]
       if (!target) return
-      let catalog = target
-      if (!catalog.path.endsWith('.xcassets')) {
+      const catalog = resolveCatalogUri(target)
+      if (!catalog) {
         void vscode.window.showErrorMessage('Select a .xcassets folder')
         return
       }
-      await vscode.commands.executeCommand(
-        'vscode.openWith',
-        catalog,
-        XcassetsEditorProvider.viewType,
-      )
+      // Prefer opening root Contents.json so default custom editor association applies.
+      const contents = vscode.Uri.joinPath(catalog, 'Contents.json')
+      try {
+        await vscode.workspace.fs.stat(contents)
+        await vscode.commands.executeCommand(
+          'vscode.openWith',
+          contents,
+          XcassetsEditorProvider.viewType,
+        )
+      } catch {
+        await vscode.commands.executeCommand(
+          'vscode.openWith',
+          catalog,
+          XcassetsEditorProvider.viewType,
+        )
+      }
     },
   )
 }

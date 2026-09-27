@@ -80,7 +80,7 @@
             "filenamePattern": "*.xcassets/Contents.json"
           }
         ],
-        "priority": "option"
+        "priority": "default"
       }
     ],
     "commands": [
@@ -89,14 +89,27 @@
         "title": "Xcode Types: Open Asset Catalog"
       }
     ],
+    "keybindings": [
+      {
+        "command": "xcodeTypes.openXcassets",
+        "key": "enter",
+        "mac": "enter",
+        "when": "filesExplorerFocus && !inputFocus && explorerResourceIsFolder && resourceFilename =~ /\\.xcassets$/"
+      }
+    ],
     "menus": {
       "explorer/context": [
         {
           "command": "xcodeTypes.openXcassets",
-          "when": "resourceFilename =~ /\\.xcassets$/",
-          "group": "navigation"
+          "when": "explorerResourceIsFolder && resourceFilename =~ /\\.xcassets$/",
+          "group": "navigation@1"
         }
       ]
+    },
+    "configurationDefaults": {
+      "workbench.editorAssociations": {
+        "*.xcassets/Contents.json": "xcodeTypes.xcassets"
+      }
     },
     "grammars": [
       {

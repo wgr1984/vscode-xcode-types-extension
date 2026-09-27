@@ -1,4 +1,5 @@
 import { useEffect, useState, type DragEvent } from 'react'
+import { hexToRgba, rgbaCss, rgbaToHex } from './colorRgba'
 import type {
   HostToWeb,
   Rgba,
@@ -12,6 +13,13 @@ declare function acquireVsCodeApi(): {
 }
 
 const vscode = acquireVsCodeApi()
+
+const FALLBACK_RGBA: Rgba = {
+  red: '0.000',
+  green: '0.000',
+  blue: '0.000',
+  alpha: '1.000',
+}
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -28,6 +36,96 @@ function fileToBase64(file: File): Promise<string> {
     reader.onerror = () => reject(reader.error ?? new Error('read failed'))
     reader.readAsDataURL(file)
   })
+}
+
+function ColorWell({
+  assetId,
+  slot,
+}: {
+  assetId: string
+  slot: SlotView
+}) {
+  const remote = slot.rgba ?? FALLBACK_RGBA
+  const [rgba, setRgba] = useState(remote)
+  const [hexDraft, setHexDraft] = useState(() => rgbaToHex(remote))
+
+  useEffect(() => {
+    setRgba(remote)
+    setHexDraft(rgbaToHex(remote))
+  }, [assetId, slot.index, remote.red, remote.green, remote.blue, remote.alpha])
+
+  const commit = (next: Rgba) => {
+    setRgba(next)
+    setHexDraft(rgbaToHex(next))
+    vscode.postMessage({
+      type: 'setColor',
+      assetId,
+      slotIndex: slot.index,
+      rgba: next,
+    })
+  }
+
+  const applyHex = () => {
+    const parsed = hexToRgba(hexDraft, rgba.alpha)
+    if (!parsed) {
+      setHexDraft(rgbaToHex(rgba))
+      return
+    }
+    commit(parsed)
+  }
+
+  return (
+    <div className="border border-[var(--vscode-panel-border,#555)] p-2 w-48">
+      <div className="text-xs opacity-70 mb-2">{slot.label}</div>
+      <div className="flex gap-2 items-center mb-2">
+        <input
+          type="color"
+          className="h-10 w-12 cursor-pointer bg-transparent border-0 p-0"
+          value={rgbaToHex(rgba)}
+          onChange={(e) => {
+            const parsed = hexToRgba(e.target.value, rgba.alpha)
+            if (parsed) commit(parsed)
+          }}
+          title="Pick color"
+        />
+        <div
+          className="h-10 flex-1 rounded-sm border border-black/30"
+          style={{ background: rgbaCss(rgba) }}
+        />
+      </div>
+      <label className="flex gap-1 text-xs mb-1 items-center">
+        <span className="w-10 shrink-0">hex</span>
+        <input
+          className="flex-1 font-mono bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+          value={hexDraft}
+          spellCheck={false}
+          onChange={(e) => setHexDraft(e.target.value)}
+          onBlur={applyHex}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              applyHex()
+            }
+          }}
+        />
+      </label>
+      <label className="flex gap-1 text-xs items-center">
+        <span className="w-10 shrink-0">alpha</span>
+        <input
+          className="flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+          value={rgba.alpha}
+          onChange={(e) => setRgba({ ...rgba, alpha: e.target.value })}
+          onBlur={() => {
+            const a = Number(rgba.alpha)
+            const alpha = Number.isFinite(a)
+              ? Math.min(1, Math.max(0, a)).toFixed(3)
+              : '1.000'
+            commit({ ...rgba, alpha })
+          }}
+        />
+      </label>
+    </div>
+  )
 }
 
 function Well({
@@ -54,41 +152,7 @@ function Well({
   }
 
   if (kind === 'colorset') {
-    const rgba = slot.rgba ?? {
-      red: '0',
-      green: '0',
-      blue: '0',
-      alpha: '1',
-    }
-    const set = (patch: Partial<Rgba>) => {
-      const next = { ...rgba, ...patch }
-      vscode.postMessage({
-        type: 'setColor',
-        assetId,
-        slotIndex: slot.index,
-        rgba: next,
-      })
-    }
-    const swatch = `rgba(${Number(rgba.red) * 255},${Number(rgba.green) * 255},${Number(rgba.blue) * 255},${rgba.alpha})`
-    return (
-      <div className="border border-[var(--vscode-panel-border,#555)] p-2 w-40">
-        <div className="text-xs opacity-70 mb-1">{slot.label}</div>
-        <div
-          className="h-12 w-full mb-2 border border-black/30"
-          style={{ background: swatch }}
-        />
-        {(['red', 'green', 'blue', 'alpha'] as const).map((k) => (
-          <label key={k} className="flex gap-1 text-xs mb-1 items-center">
-            <span className="w-10">{k}</span>
-            <input
-              className="flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
-              value={rgba[k]}
-              onChange={(e) => set({ [k]: e.target.value })}
-            />
-          </label>
-        ))}
-      </div>
-    )
+    return <ColorWell assetId={assetId} slot={slot} />
   }
 
   return (
