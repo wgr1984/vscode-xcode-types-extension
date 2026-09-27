@@ -62,6 +62,20 @@ body {
   color: var(--vscode-symbolIcon-variableForeground, #d16969);
 }
 
+/* raw editor: fill window width; expand for long lines; one scroll parent */
+.raw-editor__stack {
+  display: grid;
+  grid-template-columns: minmax(100%, max-content);
+  width: 100%;
+}
+.raw-editor__pre,
+.raw-editor__textarea {
+  grid-area: 1 / 1;
+  width: 100%;
+  min-width: 100%;
+  box-sizing: border-box;
+}
+
 /* raw editor: textarea must not paint over Prism colors */
 .raw-editor__textarea {
   color: transparent !important;

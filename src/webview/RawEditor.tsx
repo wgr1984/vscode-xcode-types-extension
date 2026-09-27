@@ -123,11 +123,11 @@ export function RawEditor({ text, languageId, errorLines, onChange }: Props) {
     'm-0 border-0 p-0 font-mono text-sm leading-5 whitespace-pre [tab-size:4]'
 
   return (
-    <div className="h-full min-h-0 overflow-auto bg-[var(--vscode-editor-background)] p-3">
-      <div className="relative w-max min-w-full">
+    <div className="raw-editor h-full min-h-0 overflow-auto bg-[var(--vscode-editor-background)] p-3">
+      <div className="raw-editor__stack">
         <pre
           aria-hidden
-          className={`${layer} pointer-events-none absolute inset-0 text-[#d4d4d4]`}
+          className={`${layer} raw-editor__pre pointer-events-none text-[#d4d4d4]`}
           dangerouslySetInnerHTML={{ __html: html }}
         />
         <textarea
@@ -136,7 +136,7 @@ export function RawEditor({ text, languageId, errorLines, onChange }: Props) {
           rows={lineCount}
           spellCheck={false}
           onChange={(e) => emit(e.target.value)}
-          className={`${layer} raw-editor__textarea relative block w-full resize-none overflow-hidden bg-transparent outline-none`}
+          className={`${layer} raw-editor__textarea resize-none overflow-hidden bg-transparent`}
         />
       </div>
     </div>
