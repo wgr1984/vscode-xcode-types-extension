@@ -98,7 +98,7 @@ export function App() {
           <RawEditor
             text={text}
             languageId={languageId}
-            hasError={model.banner?.level === 'error'}
+            errorLines={model.issues?.map((i) => i.line)}
             onChange={onRawChange}
           />
         )}

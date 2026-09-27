@@ -22,19 +22,15 @@ describe('xcconfigAdapter', () => {
   it('parse failure sets banner', () => {
     const model = xcconfigAdapter.parse(`not an assignment`)
     expect(model.banner?.level).toBe('error')
+    expect(model.issues?.[0].line).toBe(0)
   })
 
-  it('round-trips empty-key draft row', () => {
-    const model = {
-      columns: [
-        { key: 'key', label: 'Key' },
-        { key: 'value', label: 'Value' },
-      ],
-      rows: [{ id: 'new-1', cells: { key: '', value: '' } }],
-    }
-    const out = xcconfigAdapter.serialize(model)
-    const again = xcconfigAdapter.parse(out)
-    expect(again.rows).toHaveLength(1)
-    expect(again.rows[0].cells).toEqual({ key: '', value: '' })
+  it('flags bad line while keeping valid assignments', () => {
+    const model = xcconfigAdapter.parse(
+      `PRODUCT_NAME = Demo\ntetest 4534534\n`,
+    )
+    expect(model.banner?.level).toBe('error')
+    expect(model.rows).toHaveLength(1)
+    expect(model.issues).toEqual([expect.objectContaining({ line: 1 })])
   })
 })

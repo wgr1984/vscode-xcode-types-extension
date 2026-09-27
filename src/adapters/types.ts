@@ -7,7 +7,19 @@ export type Column = {
 }
 export type Row = { id: string; cells: Record<string, string>; meta?: unknown }
 export type Banner = { level: 'error' | 'info'; text: string }
-export type TableModel = { columns: Column[]; rows: Row[]; banner?: Banner }
+/** 0-based line; cols default to full line when omitted. */
+export type ParseIssue = {
+  message: string
+  line: number
+  startCol?: number
+  endCol?: number
+}
+export type TableModel = {
+  columns: Column[]
+  rows: Row[]
+  banner?: Banner
+  issues?: ParseIssue[]
+}
 
 export interface FormatAdapter {
   readonly languageId: string

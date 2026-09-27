@@ -1,4 +1,4 @@
-import type { FormatAdapter, Row, TableModel } from './types'
+import type { FormatAdapter, ParseIssue, Row, TableModel } from './types'
 
 const columns = [
   { key: 'key', label: 'Key' },
@@ -11,18 +11,25 @@ export const xcconfigAdapter: FormatAdapter = {
 
   parse(text: string): TableModel {
     const rows: Row[] = []
-    const lines = text.split(/\r?\n/)
+    const issues: ParseIssue[] = []
+    const lines = text.split(/\n/)
     let i = 0
-    let bad = false
 
-    for (const line of lines) {
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+      const line = lines[lineIdx].replace(/\r$/, '')
       const trimmed = line.trim()
       if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('#')) {
         continue
       }
       const eq = trimmed.indexOf('=')
       if (eq === -1) {
-        bad = true
+        const lead = line.match(/^\s*/)?.[0].length ?? 0
+        issues.push({
+          message: 'Invalid .xcconfig line (expected KEY = value)',
+          line: lineIdx,
+          startCol: lead,
+          endCol: line.length,
+        })
         continue
       }
       const key = trimmed.slice(0, eq).trim()
@@ -31,15 +38,22 @@ export const xcconfigAdapter: FormatAdapter = {
       rows.push({ id: String(i++), cells: { key, value } })
     }
 
-    if (bad && rows.length === 0) {
-      return {
-        columns,
-        rows: [],
-        banner: { level: 'error', text: 'Failed to parse .xcconfig' },
-      }
+    if (issues.length === 0) {
+      return { columns, rows }
     }
 
-    return { columns, rows }
+    return {
+      columns,
+      rows,
+      issues,
+      banner: {
+        level: 'error',
+        text:
+          issues.length === 1
+            ? issues[0].message
+            : `Failed to parse .xcconfig (${issues.length} invalid lines)`,
+      },
+    }
   },
 
   serialize(model: TableModel): string {

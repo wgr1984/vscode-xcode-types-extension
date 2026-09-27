@@ -1,4 +1,4 @@
-import type { FormatAdapter, Row, TableModel } from './types'
+import type { FormatAdapter, ParseIssue, Row, TableModel } from './types'
 
 const columns = [
   { key: 'key', label: 'Key' },
@@ -13,47 +13,63 @@ function unescapeString(s: string): string {
   return s.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\')
 }
 
-// ponytail: drops comments on round-trip; preserve when needed
+const PAIR =
+  /^"((?:\\.|[^"\\])*)"\s*=\s*"((?:\\.|[^"\\])*)"\s*;\s*$/
+
+// ponytail: drops comments on round-trip; line-based issues (no multi-line /* */)
 export const stringsAdapter: FormatAdapter = {
   languageId: 'strings',
 
   parse(text: string): TableModel {
     const rows: Row[] = []
-    const re = /"((?:\\.|[^"\\])*)"\s*=\s*"((?:\\.|[^"\\])*)"\s*;/g
-    let match: RegExpExecArray | null
+    const issues: ParseIssue[] = []
+    const lines = text.split(/\n/)
     let i = 0
-    while ((match = re.exec(text)) !== null) {
-      rows.push({
-        id: String(i++),
-        cells: {
-          key: unescapeString(match[1]),
-          value: unescapeString(match[2]),
-        },
+
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+      const line = lines[lineIdx].replace(/\r$/, '')
+      const trimmed = line.trim()
+      if (!trimmed) continue
+      if (trimmed.startsWith('//')) continue
+      if (/^\/\*[\s\S]*\*\/$/.test(trimmed)) continue
+
+      const match = trimmed.match(PAIR)
+      if (match) {
+        rows.push({
+          id: String(i++),
+          cells: {
+            key: unescapeString(match[1]),
+            value: unescapeString(match[2]),
+          },
+        })
+        continue
+      }
+
+      const lead = line.match(/^\s*/)?.[0].length ?? 0
+      issues.push({
+        message: 'Invalid .strings entry (expected "key" = "value";)',
+        line: lineIdx,
+        startCol: lead,
+        endCol: line.length,
       })
     }
 
-    const stripped = text
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/\/\/[^\n]*/g, '')
-      .replace(re, '')
-      .replace(/\s+/g, '')
-
-    // leftover non-whitespace after valid pairs = syntax error (do not ignore)
-    if (stripped.length > 0) {
-      return {
-        columns,
-        rows,
-        banner: {
-          level: 'error',
-          text:
-            rows.length === 0
-              ? 'Failed to parse .strings'
-              : 'Failed to parse .strings (invalid syntax)',
-        },
-      }
+    if (issues.length === 0) {
+      return { columns, rows }
     }
 
-    return { columns, rows }
+    return {
+      columns,
+      rows,
+      issues,
+      banner: {
+        level: 'error',
+        text:
+          issues.length === 1
+            ? issues[0].message
+            : `Failed to parse .strings (${issues.length} invalid lines)`,
+      },
+    }
   },
 
   serialize(model: TableModel): string {

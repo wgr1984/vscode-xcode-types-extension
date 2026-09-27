@@ -49,16 +49,20 @@ export function colorizePrismHtml(html: string): string {
 type Props = {
   text: string
   languageId: string
-  hasError?: boolean
+  errorLines?: number[]
   onChange: (text: string) => void
 }
 
-export function RawEditor({ text, languageId, hasError, onChange }: Props) {
+export function RawEditor({ text, languageId, errorLines, onChange }: Props) {
   const [local, setLocal] = useState(text)
   const dirty = useRef(false)
   const preRef = useRef<HTMLPreElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const errorSet = useMemo(
+    () => new Set(errorLines ?? []),
+    [errorLines],
+  )
 
   useEffect(() => {
     if (!dirty.current) setLocal(text)
@@ -80,15 +84,23 @@ export function RawEditor({ text, languageId, hasError, onChange }: Props) {
   const lang = prismLangFor(languageId)
 
   const html = useMemo(() => {
-    const code = local.endsWith('\n') ? local : local + '\n'
-    let raw: string
-    if (lang === 'none' || !Prism.languages[lang]) {
-      raw = Prism.util.encode(code) as string
-    } else {
-      raw = Prism.highlight(code, Prism.languages[lang], lang)
-    }
-    return colorizePrismHtml(raw)
-  }, [local, lang])
+    const lines = local.split('\n')
+    return lines
+      .map((line, i) => {
+        let raw: string
+        if (lang === 'none' || !Prism.languages[lang]) {
+          raw = Prism.util.encode(line) as string
+        } else {
+          raw = Prism.highlight(line, Prism.languages[lang], lang)
+        }
+        const colored = colorizePrismHtml(raw)
+        if (errorSet.has(i)) {
+          return `<span class="raw-error-line">${colored}</span>`
+        }
+        return colored
+      })
+      .join('\n')
+  }, [local, lang, errorSet])
 
   const syncScroll = () => {
     const ta = taRef.current
@@ -122,9 +134,7 @@ export function RawEditor({ text, languageId, hasError, onChange }: Props) {
       <pre
         ref={preRef}
         aria-hidden
-        className={`${shared} raw-editor__pre pointer-events-none text-[#d4d4d4]${
-          hasError ? ' is-error' : ''
-        }`}
+        className={`${shared} raw-editor__pre pointer-events-none text-[#d4d4d4]`}
         dangerouslySetInnerHTML={{ __html: html }}
       />
       <textarea

@@ -71,22 +71,29 @@ export class TableEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     const syncDiagnostics = (model: TableModel) => {
-      if (model.banner?.level === 'error') {
-        const end = Math.max(document.getText().length, 1)
-        const range = new vscode.Range(
-          document.positionAt(0),
-          document.positionAt(end),
-        )
-        this.diagnostics.set(document.uri, [
-          new vscode.Diagnostic(
-            range,
-            model.banner.text,
-            vscode.DiagnosticSeverity.Error,
-          ),
-        ])
-      } else {
+      const issues = model.issues ?? []
+      if (issues.length === 0) {
         this.diagnostics.delete(document.uri)
+        return
       }
+      const diags = issues.map((issue) => {
+        const lineText =
+          document.lineAt(Math.min(issue.line, document.lineCount - 1)).text
+        const startCol = issue.startCol ?? 0
+        const endCol = issue.endCol ?? lineText.length
+        const range = new vscode.Range(
+          issue.line,
+          Math.min(startCol, lineText.length),
+          issue.line,
+          Math.min(endCol, lineText.length),
+        )
+        return new vscode.Diagnostic(
+          range,
+          issue.message,
+          vscode.DiagnosticSeverity.Error,
+        )
+      })
+      this.diagnostics.set(document.uri, diags)
     }
 
     const send = (type: 'init' | 'update', model: TableModel) => {
