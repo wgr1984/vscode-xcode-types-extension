@@ -67,6 +67,15 @@ body {
   color: transparent !important;
   -webkit-text-fill-color: transparent !important;
   caret-color: var(--vscode-editorCursor-foreground, #aeafad);
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+.raw-editor__textarea:focus,
+.raw-editor__textarea:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 
 /* parse fail — wavy underline on bad lines only */
