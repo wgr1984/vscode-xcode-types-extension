@@ -66,9 +66,8 @@ export class XcassetsEditorProvider implements vscode.CustomEditorProvider<Xcass
     )
 
     const push = (type: 'init' | 'update') => {
-      webviewPanel.webview.postMessage({
-        type,
-        model: document.toViewModel(webviewPanel.webview),
+      void document.toViewModelAsync(webviewPanel.webview).then((model) => {
+        webviewPanel.webview.postMessage({ type, model })
       })
     }
 

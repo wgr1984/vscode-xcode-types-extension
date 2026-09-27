@@ -206,6 +206,23 @@ export function slotFieldsFor(
       arr[slotIndex] && typeof arr[slotIndex] === 'object' ? arr[slotIndex] : {}
     return imageSlotFields(s, kind)
   }
+  if (kind === 'dataset') {
+    if (!contents || typeof contents !== 'object') return []
+    const arr = (contents as { data?: unknown }).data
+    if (!Array.isArray(arr) || slotIndex < 0 || slotIndex >= arr.length) return []
+    const s =
+      arr[slotIndex] && typeof arr[slotIndex] === 'object'
+        ? (arr[slotIndex] as Record<string, unknown>)
+        : {}
+    return [
+      {
+        key: 'filename',
+        label: 'Filename',
+        type: 'string',
+        value: typeof s.filename === 'string' ? s.filename : '',
+      },
+    ]
+  }
   return []
 }
 
@@ -220,7 +237,8 @@ export function setSlotAttribute(
     throw new Error('Contents.json root must be an object')
   }
   const root = JSON.parse(JSON.stringify(contents)) as Record<string, unknown>
-  const arrKey = kind === 'colorset' ? 'colors' : 'images'
+  const arrKey =
+    kind === 'colorset' ? 'colors' : kind === 'dataset' ? 'data' : 'images'
   const arr = root[arrKey]
   if (!Array.isArray(arr)) throw new Error(`Missing ${arrKey} array`)
   if (slotIndex < 0 || slotIndex >= arr.length) {

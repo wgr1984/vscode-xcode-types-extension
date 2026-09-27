@@ -126,3 +126,4 @@ Spec: (pending) `superpowers/specs/2026-09-27-xcassets-design.md`
 | T10.15 | Reveal selected asset folder in Explorer | done | `revealInExplorer` on nav select |
 | T10.16 | Fix add asset (`window.prompt` broken in webview) | done | host `showInputBox` |
 | T10.17 | App Icon inspector (iOS/macOS/watchOS/appearances) | done | `appIconGrid.ts` |
+| T10.18 | Filename field file suggestions from asset folder | done | datalist + dropdown |

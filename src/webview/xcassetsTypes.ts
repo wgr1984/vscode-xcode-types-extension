@@ -38,6 +38,8 @@ export type PropertyFieldView =
       type: 'string'
       value: string
       placeholder?: string
+      /** Filename suggestions from asset folder */
+      suggestions?: string[]
     }
 
 export type ImageGridView = {
@@ -73,6 +75,8 @@ export type AssetDetail = {
   appIconGrid?: AppIconGridView
   selectedSlotIndex?: number
   slotProperties?: PropertyFieldView[]
+  /** Non-Contents.json files in the selected asset folder */
+  folderFiles?: string[]
 }
 
 export type XcassetsViewModel = {

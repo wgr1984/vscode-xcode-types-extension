@@ -178,6 +178,52 @@ export class XcassetsDocument implements vscode.CustomDocument {
   }
 
   toViewModel(webview?: vscode.Webview): XcassetsViewModel {
+    return this.buildViewModel(webview, [])
+  }
+
+  async toViewModelAsync(webview?: vscode.Webview): Promise<XcassetsViewModel> {
+    const folderFiles = this.selectionId
+      ? await this.listAssetFiles(this.selectionId)
+      : []
+    return this.buildViewModel(webview, folderFiles)
+  }
+
+  /** Files in the asset folder (excl. Contents.json), plus staged drops. */
+  async listAssetFiles(assetId: string): Promise<string[]> {
+    const node = findNode(this.tree, assetId)
+    if (!node) return []
+    const names = new Set<string>()
+    const folder = this.uriForAsset(assetId)
+    if (folder) {
+      try {
+        const ents = await vscode.workspace.fs.readDirectory(folder)
+        for (const [name, type] of ents) {
+          if (type === vscode.FileType.File && name !== 'Contents.json') {
+            names.add(name)
+          }
+        }
+      } catch {
+        // folder may not exist yet (new staged asset)
+      }
+    }
+    const prefix = node.relativePath ? `${node.relativePath}/` : ''
+    for (const rel of this.stagedFiles.keys()) {
+      if (prefix) {
+        if (rel.startsWith(prefix)) {
+          const rest = rel.slice(prefix.length)
+          if (rest && !rest.includes('/')) names.add(rest)
+        }
+      } else if (!rel.includes('/')) {
+        names.add(rel)
+      }
+    }
+    return [...names].sort((a, b) => a.localeCompare(b))
+  }
+
+  private buildViewModel(
+    webview: vscode.Webview | undefined,
+    folderFiles: string[],
+  ): XcassetsViewModel {
     const assets = flattenAssets(this.tree).map((a) => ({
       id: a.id,
       name: a.name,
@@ -211,6 +257,24 @@ export class XcassetsDocument implements vscode.CustomDocument {
             this.slotToView(node, s, webview),
           )
           const slotIdx = this.selectedSlotIndex
+          let slotProperties =
+            (node.kind === 'imageset' ||
+              node.kind === 'colorset' ||
+              node.kind === 'appiconset' ||
+              node.kind === 'dataset' ||
+              node.kind === 'launchimage') &&
+            slotIdx !== undefined &&
+            slotIdx >= 0 &&
+            slotIdx < slots.length
+              ? slotFieldsFor(node.kind, contents, slotIdx)
+              : undefined
+          if (slotProperties && folderFiles.length > 0) {
+            slotProperties = slotProperties.map((f) =>
+              f.type === 'string' && f.key === 'filename'
+                ? { ...f, suggestions: folderFiles }
+                : f,
+            )
+          }
           detail = {
             id: node.id,
             kind: node.kind,
@@ -239,15 +303,8 @@ export class XcassetsDocument implements vscode.CustomDocument {
                 ? inferAppIconGrid(contents)
                 : undefined,
             selectedSlotIndex: slotIdx,
-            slotProperties:
-              (node.kind === 'imageset' ||
-                node.kind === 'colorset' ||
-                node.kind === 'appiconset') &&
-              slotIdx !== undefined &&
-              slotIdx >= 0 &&
-              slotIdx < slots.length
-                ? slotFieldsFor(node.kind, contents, slotIdx)
-                : undefined,
+            slotProperties,
+            folderFiles,
           }
         }
       }
