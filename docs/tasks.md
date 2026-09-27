@@ -99,3 +99,22 @@ Spec: [raw-edit-mode-design](./superpowers/specs/2026-09-27-raw-edit-mode-design
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
 | T9.1 | Workspace diagnostics scan | todo | opt-in; see [ideas § Backlog](./ideas.md#workspace-diagnostics-deferred) |
+
+## Phase 10 — `.xcassets` support
+
+Research: [research/xcassets.md](./research/xcassets.md)  
+Spec: (pending) `superpowers/specs/2026-09-27-xcassets-design.md`  
+**Hard fact:** catalog = folder bundle + many subtypes; not a `CustomTextEditor` / `FormatAdapter`.
+
+| ID | Task | Status | Notes |
+|----|------|--------|-------|
+| T10.0 | Deep research subtypes + Contents.json | done | Apple archive + real catalogs |
+| T10.1 | Scope / UX (**C** Xcode-like) | done | wells + drag |
+| T10.2 | Subtype set (**3** common day one) | done | imageset, appiconset, colorset, dataset, launchimage; exotic stub |
+| T10.3 | Files (**D**) + JSON (**P**) | done | drag-copy; pretty stringify churn OK |
+| T10.4 | Design approve §§1–4 | done | see design-draft |
+| T10.5 | Formal design spec | done | approved 2026-09-27 |
+| T10.6 | Implementation plan | done | `superpowers/plans/2026-09-27-xcassets.md` |
+| T10.7 | Sample `demo.xcassets` | todo | after plan |
+| T10.8 | CustomEditorProvider + catalog model + webview | todo | after plan |
+| T10.9 | Tests + contributes (command / context) | todo | after plan |
