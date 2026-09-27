@@ -49,10 +49,11 @@ export function colorizePrismHtml(html: string): string {
 type Props = {
   text: string
   languageId: string
+  hasError?: boolean
   onChange: (text: string) => void
 }
 
-export function RawEditor({ text, languageId, onChange }: Props) {
+export function RawEditor({ text, languageId, hasError, onChange }: Props) {
   const [local, setLocal] = useState(text)
   const dirty = useRef(false)
   const preRef = useRef<HTMLPreElement>(null)
@@ -121,7 +122,9 @@ export function RawEditor({ text, languageId, onChange }: Props) {
       <pre
         ref={preRef}
         aria-hidden
-        className={`${shared} pointer-events-none text-[#d4d4d4]`}
+        className={`${shared} raw-editor__pre pointer-events-none text-[#d4d4d4]${
+          hasError ? ' is-error' : ''
+        }`}
         dangerouslySetInnerHTML={{ __html: html }}
       />
       <textarea

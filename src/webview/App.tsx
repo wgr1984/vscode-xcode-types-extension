@@ -95,7 +95,12 @@ export function App() {
             }}
           />
         ) : (
-          <RawEditor text={text} languageId={languageId} onChange={onRawChange} />
+          <RawEditor
+            text={text}
+            languageId={languageId}
+            hasError={model.banner?.level === 'error'}
+            onChange={onRawChange}
+          />
         )}
       </div>
     </div>

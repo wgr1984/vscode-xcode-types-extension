@@ -68,3 +68,12 @@ body {
   -webkit-text-fill-color: transparent !important;
   caret-color: var(--vscode-editorCursor-foreground, #aeafad);
 }
+
+/* parse fail — whole buffer wavy underline (no line/col from adapters yet) */
+.raw-editor__pre.is-error {
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: var(--vscode-editorError-foreground, #f14c4c);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}

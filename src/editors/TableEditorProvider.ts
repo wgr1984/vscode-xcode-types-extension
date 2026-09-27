@@ -26,14 +26,19 @@ export class TableEditorProvider implements vscode.CustomTextEditorProvider {
     context: vscode.ExtensionContext,
     viewType: string,
   ): vscode.Disposable {
+    const diagnostics = vscode.languages.createDiagnosticCollection('xcodeTypes')
+    context.subscriptions.push(diagnostics)
     return vscode.window.registerCustomEditorProvider(
       viewType,
-      new TableEditorProvider(context),
+      new TableEditorProvider(context, diagnostics),
       { webviewOptions: { retainContextWhenHidden: true } },
     )
   }
 
-  private constructor(private readonly context: vscode.ExtensionContext) {}
+  private constructor(
+    private readonly context: vscode.ExtensionContext,
+    private readonly diagnostics: vscode.DiagnosticCollection,
+  ) {}
 
   async resolveCustomTextEditor(
     document: vscode.TextDocument,
@@ -65,8 +70,28 @@ export class TableEditorProvider implements vscode.CustomTextEditorProvider {
       ownWriteTimers.add(t)
     }
 
+    const syncDiagnostics = (model: TableModel) => {
+      if (model.banner?.level === 'error') {
+        const end = Math.max(document.getText().length, 1)
+        const range = new vscode.Range(
+          document.positionAt(0),
+          document.positionAt(end),
+        )
+        this.diagnostics.set(document.uri, [
+          new vscode.Diagnostic(
+            range,
+            model.banner.text,
+            vscode.DiagnosticSeverity.Error,
+          ),
+        ])
+      } else {
+        this.diagnostics.delete(document.uri)
+      }
+    }
+
     const send = (type: 'init' | 'update', model: TableModel) => {
       const languageId = resolveLanguageId(document)
+      syncDiagnostics(model)
       webviewPanel.webview.postMessage({
         type,
         model,
@@ -153,6 +178,7 @@ export class TableEditorProvider implements vscode.CustomTextEditorProvider {
     webviewPanel.onDidDispose(() => {
       for (const t of ownWriteTimers) clearTimeout(t)
       ownWriteTimers.clear()
+      this.diagnostics.delete(document.uri)
       changeSub.dispose()
     })
   }
