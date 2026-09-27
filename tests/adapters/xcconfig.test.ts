@@ -33,4 +33,18 @@ describe('xcconfigAdapter', () => {
     expect(model.rows).toHaveLength(1)
     expect(model.issues).toEqual([expect.objectContaining({ line: 1 })])
   })
+
+  it('round-trips empty-key draft row', () => {
+    const model = {
+      columns: [
+        { key: 'key', label: 'Key' },
+        { key: 'value', label: 'Value' },
+      ],
+      rows: [{ id: 'new-1', cells: { key: '', value: '' } }],
+    }
+    const out = xcconfigAdapter.serialize(model)
+    const again = xcconfigAdapter.parse(out)
+    expect(again.rows).toHaveLength(1)
+    expect(again.rows[0].cells).toEqual({ key: '', value: '' })
+  })
 })
