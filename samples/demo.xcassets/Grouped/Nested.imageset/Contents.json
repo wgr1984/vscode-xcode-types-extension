@@ -1,18 +1,25 @@
 {
-  "images" : [
+  "images": [
     {
-      "filename" : "nested@1x.png",
-      "idiom" : "universal",
-      "scale" : "1x"
+      "filename": "Nested.svg",
+      "idiom": "universal"
     },
     {
-      "filename" : "nested@2x.png",
-      "idiom" : "universal",
-      "scale" : "2x"
+      "filename": "nested@1x.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "nested@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
     }
   ],
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
+  "info": {
+    "author": "xcode",
+    "version": 1
+  },
+  "properties": {
+    "preserves-vector-representation": true
   }
 }
