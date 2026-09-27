@@ -10,6 +10,34 @@ import {
   XcassetsEditorProvider,
 } from './editors/XcassetsEditorProvider'
 
+/** Catalog root Contents.json only (not *.imageset/Contents.json). */
+function isXcassetsRootContentsJson(uri: vscode.Uri): boolean {
+  return /\.xcassets\/Contents\.json$/i.test(uri.path)
+}
+
+function registerXcassetsAutoOpen(): vscode.Disposable {
+  const reopening = new Set<string>()
+  const reopen = async (uri: vscode.Uri) => {
+    if (uri.scheme !== 'file' && uri.scheme !== 'vscode-vfs') return
+    if (!isXcassetsRootContentsJson(uri)) return
+    const key = uri.toString()
+    if (reopening.has(key)) return
+    reopening.add(key)
+    try {
+      await vscode.commands.executeCommand(
+        'vscode.openWith',
+        uri,
+        XcassetsEditorProvider.viewType,
+      )
+    } finally {
+      setTimeout(() => reopening.delete(key), 1500)
+    }
+  }
+  return vscode.workspace.onDidOpenTextDocument((doc) => {
+    void reopen(doc.uri)
+  })
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   registerAdapter(stringsAdapter)
   registerAdapter(xcconfigAdapter)
@@ -19,6 +47,7 @@ export function activate(context: vscode.ExtensionContext): void {
     TableEditorProvider.register(context, 'xcodeTypes.table'),
     XcassetsEditorProvider.register(context),
     registerOpenXcassetsCommand(),
+    registerXcassetsAutoOpen(),
   )
 }
 

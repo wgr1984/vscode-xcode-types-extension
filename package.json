@@ -77,7 +77,7 @@
         "displayName": "Asset Catalog",
         "selector": [
           {
-            "filenamePattern": "*.xcassets/Contents.json"
+            "filenamePattern": "**/*.xcassets/Contents.json"
           }
         ],
         "priority": "default"
@@ -108,7 +108,7 @@
     },
     "configurationDefaults": {
       "workbench.editorAssociations": {
-        "*.xcassets/Contents.json": "xcodeTypes.xcassets"
+        "**/*.xcassets/Contents.json": "xcodeTypes.xcassets"
       }
     },
     "grammars": [
