@@ -56,7 +56,6 @@ type Props = {
 export function RawEditor({ text, languageId, errorLines, onChange }: Props) {
   const [local, setLocal] = useState(text)
   const dirty = useRef(false)
-  const preRef = useRef<HTMLPreElement>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const errorSet = useMemo(
@@ -102,14 +101,6 @@ export function RawEditor({ text, languageId, errorLines, onChange }: Props) {
       .join('\n')
   }, [local, lang, errorSet])
 
-  const syncScroll = () => {
-    const ta = taRef.current
-    const pre = preRef.current
-    if (!ta || !pre) return
-    pre.scrollTop = ta.scrollTop
-    pre.scrollLeft = ta.scrollLeft
-  }
-
   const emit = (next: string) => {
     setLocal(next)
     dirty.current = true
@@ -126,25 +117,28 @@ export function RawEditor({ text, languageId, errorLines, onChange }: Props) {
     }
   }, [])
 
-  const shared =
-    'absolute inset-0 m-0 p-3 box-border w-full h-full overflow-auto font-mono text-sm leading-5 whitespace-pre-wrap break-words'
+  const lineCount = Math.max(local.split('\n').length, 1)
+  // One scroll parent — dual overflow-auto desyncs caret after ~1 page.
+  const layer =
+    'm-0 border-0 p-0 font-mono text-sm leading-5 whitespace-pre [tab-size:4]'
 
   return (
-    <div className="relative h-full min-h-0 bg-[var(--vscode-editor-background)]">
-      <pre
-        ref={preRef}
-        aria-hidden
-        className={`${shared} raw-editor__pre pointer-events-none text-[#d4d4d4]`}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-      <textarea
-        ref={taRef}
-        value={local}
-        spellCheck={false}
-        onScroll={syncScroll}
-        onChange={(e) => emit(e.target.value)}
-        className={`${shared} raw-editor__textarea resize-none bg-transparent outline-none`}
-      />
+    <div className="h-full min-h-0 overflow-auto bg-[var(--vscode-editor-background)] p-3">
+      <div className="relative w-max min-w-full">
+        <pre
+          aria-hidden
+          className={`${layer} pointer-events-none absolute inset-0 text-[#d4d4d4]`}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+        <textarea
+          ref={taRef}
+          value={local}
+          rows={lineCount}
+          spellCheck={false}
+          onChange={(e) => emit(e.target.value)}
+          className={`${layer} raw-editor__textarea relative block w-full resize-none overflow-hidden bg-transparent outline-none`}
+        />
+      </div>
     </div>
   )
 }
