@@ -1,4 +1,6 @@
 import * as vscode from 'vscode'
+import type { AssetKind } from '../xcassets/kinds'
+import { kindFromFolderName } from '../xcassets/kinds'
 import { stringifyContentsJson } from '../xcassets/jsonFormat'
 import {
   setColorComponents,
@@ -11,6 +13,10 @@ import {
   slotsFromContents,
   type SlotInfo,
 } from '../xcassets/model'
+import {
+  defaultContentsJson,
+  folderNameFor,
+} from '../xcassets/templates'
 import type { CatalogNode } from '../xcassets/walk'
 import { walkCatalogUri, type WalkFs } from '../xcassets/walk'
 import type { AssetDetail, XcassetsViewModel } from '../webview/xcassetsTypes'
@@ -58,6 +64,10 @@ export class XcassetsDocument implements vscode.CustomDocument {
   private stagedFiles = new Map<string, Uint8Array>()
   /** asset id → mutated Contents.json object */
   private stagedContents = new Map<string, unknown>()
+  /** relative folder path → Contents.json body for new assets */
+  private stagedCreates = new Map<string, unknown>()
+  /** relative folder paths to delete recursively on save */
+  private stagedDeletes = new Set<string>()
   private watcher?: vscode.FileSystemWatcher
 
   private constructor(
@@ -129,6 +139,8 @@ export class XcassetsDocument implements vscode.CustomDocument {
     )
     this.stagedFiles.clear()
     this.stagedContents.clear()
+    this.stagedCreates.clear()
+    this.stagedDeletes.clear()
     this.dirty = false
     this.banner = undefined
   }
@@ -266,9 +278,81 @@ export class XcassetsDocument implements vscode.CustomDocument {
     }
   }
 
+  addAsset(parentId: string, kind: string, name: string): void {
+    const editable: AssetKind[] = [
+      'imageset',
+      'appiconset',
+      'colorset',
+      'dataset',
+      'launchimage',
+      'group',
+    ]
+    if (!editable.includes(kind as AssetKind)) {
+      throw new Error(`Cannot add kind ${kind}`)
+    }
+    const k = kind as AssetKind
+    const parent =
+      parentId === '.' || parentId === ''
+        ? this.tree
+        : findNode(this.tree, parentId)
+    if (!parent || (parent.kind !== 'catalog' && parent.kind !== 'group')) {
+      throw new Error('Parent must be catalog or group')
+    }
+    const folder = folderNameFor(k, name)
+    const rel = parent.relativePath
+      ? `${parent.relativePath}/${folder}`
+      : folder
+    if (findNode(this.tree, rel)) throw new Error('Asset already exists')
+    const contents = defaultContentsJson(k)
+    this.stagedCreates.set(rel, contents)
+    const child: CatalogNode = {
+      id: rel,
+      name: folder,
+      kind: kindFromFolderName(folder),
+      relativePath: rel,
+      contents,
+      children: k === 'group' ? [] : undefined,
+    }
+    parent.children = [...(parent.children ?? []), child].sort((a, b) =>
+      a.name.localeCompare(b.name),
+    )
+    this.selectionId = rel
+    this.markDirty()
+  }
+
+  deleteAsset(assetId: string): void {
+    if (assetId === '.' || !assetId) throw new Error('Cannot delete catalog root')
+    const node = findNode(this.tree, assetId)
+    if (!node) throw new Error('Unknown asset')
+    this.stagedDeletes.add(node.relativePath)
+    this.stagedContents.delete(assetId)
+    this.stagedCreates.delete(node.relativePath)
+    const removeFrom = (parent: CatalogNode): boolean => {
+      const kids = parent.children
+      if (!kids) return false
+      const idx = kids.findIndex((c) => c.id === assetId)
+      if (idx >= 0) {
+        kids.splice(idx, 1)
+        return true
+      }
+      return kids.some((c) => removeFrom(c))
+    }
+    removeFrom(this.tree)
+    if (this.selectionId === assetId) this.selectionId = undefined
+    this.markDirty()
+  }
+
   async save(): Promise<void> {
     this.ownWrite = true
     try {
+      for (const [rel, contents] of this.stagedCreates) {
+        const dir = joinUri(this.catalogRoot, rel)
+        await vscode.workspace.fs.createDirectory(dir)
+        await vscode.workspace.fs.writeFile(
+          vscode.Uri.joinPath(dir, 'Contents.json'),
+          new TextEncoder().encode(stringifyContentsJson(contents)),
+        )
+      }
       for (const [rel, bytes] of this.stagedFiles) {
         const target = joinUri(this.catalogRoot, rel)
         await vscode.workspace.fs.writeFile(target, bytes)
@@ -288,8 +372,16 @@ export class XcassetsDocument implements vscode.CustomDocument {
           new TextEncoder().encode(text),
         )
       }
+      for (const rel of this.stagedDeletes) {
+        await vscode.workspace.fs.delete(joinUri(this.catalogRoot, rel), {
+          recursive: true,
+          useTrash: true,
+        })
+      }
       this.stagedFiles.clear()
       this.stagedContents.clear()
+      this.stagedCreates.clear()
+      this.stagedDeletes.clear()
       this.dirty = false
       this.banner = undefined
     } finally {

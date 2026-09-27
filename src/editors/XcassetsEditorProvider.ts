@@ -86,10 +86,12 @@ export class XcassetsEditorProvider implements vscode.CustomEditorProvider<Xcass
           const bytes = new Uint8Array(Buffer.from(msg.bytesBase64, 'base64'))
           document.applyDrop(msg.assetId, msg.slotIndex, msg.fileName, bytes)
           push('update')
-        } else if (msg.type === 'addAsset' || msg.type === 'deleteAsset') {
-          void vscode.window.showInformationMessage(
-            'Add/delete assets: coming in next slice',
-          )
+        } else if (msg.type === 'addAsset') {
+          document.addAsset(msg.parentId, msg.kind, msg.name)
+          push('update')
+        } else if (msg.type === 'deleteAsset') {
+          document.deleteAsset(msg.assetId)
+          push('update')
         }
       } catch (e) {
         void vscode.window.showErrorMessage(

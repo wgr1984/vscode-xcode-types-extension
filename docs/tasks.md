@@ -115,6 +115,6 @@ Spec: (pending) `superpowers/specs/2026-09-27-xcassets-design.md`
 | T10.4 | Design approve §§1–4 | done | see design-draft |
 | T10.5 | Formal design spec | done | approved 2026-09-27 |
 | T10.6 | Implementation plan | done | `superpowers/plans/2026-09-27-xcassets.md` |
-| T10.7 | Sample `demo.xcassets` | todo | after plan |
-| T10.8 | CustomEditorProvider + catalog model + webview | todo | after plan |
-| T10.9 | Tests + contributes (command / context) | todo | after plan |
+| T10.7 | Sample `demo.xcassets` | done | |
+| T10.8 | CustomEditorProvider + catalog model + webview | done | wells, drop, color, add/delete |
+| T10.9 | Tests + contributes (command / context) | done | F5 smoke: you |

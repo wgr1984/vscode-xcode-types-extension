@@ -20,4 +20,4 @@ VS Code / Cursor extension: graphical + syntax editing for Xcode config/localiza
 | [superpowers/specs/2026-09-27-xcassets-design.md](./superpowers/specs/2026-09-27-xcassets-design.md) | xcassets catalog editor (approved) |
 | [superpowers/plans/2026-09-27-xcassets.md](./superpowers/plans/2026-09-27-xcassets.md) | xcassets implementation plan |
 
-**Status:** Phase 10 xcassets — spec + plan ready; await execution choice.
+**Status:** Phase 10 xcassets — implemented on `feature/xcassets` worktree; F5 smoke pending.

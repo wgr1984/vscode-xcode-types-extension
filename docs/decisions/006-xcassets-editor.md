@@ -1,6 +1,6 @@
 # 006 — xcassets editor
 
-**Status:** proposed → formal spec written, awaiting review  
+**Status:** accepted  
 **Date:** 2026-09-27  
 **Phase:** 10
 
