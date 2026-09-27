@@ -37,7 +37,10 @@ function arrFor(
   return arr as Record<string, unknown>[]
 }
 
-function imageSlotFields(s: Record<string, unknown>): PropertyField[] {
+function imageSlotFields(
+  s: Record<string, unknown>,
+  kind: AssetKind,
+): PropertyField[] {
   const compression =
     typeof s['compression-type'] === 'string' ? String(s['compression-type']) : ''
   const gamut =
@@ -48,7 +51,7 @@ function imageSlotFields(s: Record<string, unknown>): PropertyField[] {
       : ''
   const idiom = typeof s.idiom === 'string' ? String(s.idiom) : ''
   const scale = typeof s.scale === 'string' ? String(s.scale) : ''
-  return [
+  const fields: PropertyField[] = [
     {
       key: 'filename',
       label: 'Filename',
@@ -60,8 +63,45 @@ function imageSlotFields(s: Record<string, unknown>): PropertyField[] {
       label: 'Idiom',
       type: 'select',
       value: idiom,
-      options: IDIOM_OPTIONS,
+      options: [
+        ...IDIOM_OPTIONS,
+        { value: 'ios-marketing', label: 'ios-marketing' },
+        { value: 'watch-marketing', label: 'watch-marketing' },
+      ],
     },
+  ]
+  if (kind === 'appiconset') {
+    fields.push(
+      {
+        key: 'platform',
+        label: 'Platform',
+        type: 'select',
+        value: typeof s.platform === 'string' ? String(s.platform) : '',
+        options: [
+          { value: '', label: '(none)' },
+          { value: 'ios', label: 'ios' },
+          { value: 'macos', label: 'macos' },
+          { value: 'watchos', label: 'watchos' },
+          { value: 'tvos', label: 'tvos' },
+        ],
+      },
+      {
+        key: 'size',
+        label: 'Size',
+        type: 'string',
+        value: typeof s.size === 'string' ? String(s.size) : '',
+        placeholder: '60x60',
+      },
+      {
+        key: 'role',
+        label: 'Role',
+        type: 'string',
+        value: typeof s.role === 'string' ? String(s.role) : '',
+        placeholder: 'appLauncher',
+      },
+    )
+  }
+  fields.push(
     {
       key: 'scale',
       label: 'Scale',
@@ -88,7 +128,9 @@ function imageSlotFields(s: Record<string, unknown>): PropertyField[] {
       value: gamut,
       options: GAMUT_OPTIONS,
     },
-    {
+  )
+  if (kind === 'imageset') {
+    fields.push({
       key: 'language-direction',
       label: 'Direction',
       type: 'select',
@@ -98,8 +140,9 @@ function imageSlotFields(s: Record<string, unknown>): PropertyField[] {
         { value: 'left-to-right', label: 'Left to Right' },
         { value: 'right-to-left', label: 'Right to Left' },
       ],
-    },
-  ]
+    })
+  }
+  return fields
 }
 
 function colorSlotFields(s: Record<string, unknown>): PropertyField[] {
@@ -161,7 +204,7 @@ export function slotFieldsFor(
     if (!arr || slotIndex < 0 || slotIndex >= arr.length) return []
     const s =
       arr[slotIndex] && typeof arr[slotIndex] === 'object' ? arr[slotIndex] : {}
-    return imageSlotFields(s)
+    return imageSlotFields(s, kind)
   }
   return []
 }

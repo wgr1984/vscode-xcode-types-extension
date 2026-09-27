@@ -14,6 +14,11 @@ import {
   type SlotInfo,
 } from '../xcassets/model'
 import {
+  applyAppIconGrid,
+  inferAppIconGrid,
+  type AppIconGridConfig,
+} from '../xcassets/appIconGrid'
+import {
   applyColorGrid,
   applyImageGrid,
   inferColorGrid,
@@ -206,10 +211,6 @@ export class XcassetsDocument implements vscode.CustomDocument {
             this.slotToView(node, s, webview),
           )
           const slotIdx = this.selectedSlotIndex
-          const gridKind =
-            node.kind === 'imageset' || node.kind === 'colorset'
-              ? node.kind
-              : undefined
           detail = {
             id: node.id,
             kind: node.kind,
@@ -229,10 +230,19 @@ export class XcassetsDocument implements vscode.CustomDocument {
                       graphics: [],
                     }
                   : undefined,
-            gridKind,
+            gridKind:
+              node.kind === 'imageset' || node.kind === 'colorset'
+                ? node.kind
+                : undefined,
+            appIconGrid:
+              node.kind === 'appiconset'
+                ? inferAppIconGrid(contents)
+                : undefined,
             selectedSlotIndex: slotIdx,
             slotProperties:
-              (node.kind === 'imageset' || node.kind === 'colorset') &&
+              (node.kind === 'imageset' ||
+                node.kind === 'colorset' ||
+                node.kind === 'appiconset') &&
               slotIdx !== undefined &&
               slotIdx >= 0 &&
               slotIdx < slots.length
@@ -366,6 +376,20 @@ export class XcassetsDocument implements vscode.CustomDocument {
     } else {
       throw new Error('Grid applies to imageset/colorset only')
     }
+    this.selectedSlotIndex = undefined
+  }
+
+  setAppIconGrid(
+    assetId: string,
+    grid: AppIconGridConfig | Record<string, unknown>,
+  ): void {
+    const node = findNode(this.tree, assetId)
+    if (!node || node.kind !== 'appiconset') {
+      throw new Error('App icon grid applies to appiconset only')
+    }
+    this.mutateContents(assetId, (c) =>
+      applyAppIconGrid(c, grid as AppIconGridConfig),
+    )
     this.selectedSlotIndex = undefined
   }
 

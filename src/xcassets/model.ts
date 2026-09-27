@@ -63,6 +63,8 @@ function slotLabel(kind: AssetKind, slot: Record<string, unknown>): string {
   if (typeof slot.idiom === 'string') parts.push(slot.idiom)
   if (typeof slot.scale === 'string') parts.push(slot.scale)
   if (typeof slot.size === 'string') parts.push(slot.size)
+  if (typeof slot.platform === 'string') parts.push(slot.platform)
+  if (typeof slot.role === 'string') parts.push(slot.role)
   if (typeof slot.orientation === 'string') parts.push(slot.orientation)
   if (kind === 'colorset') parts.push('color')
   return parts.join(' · ')

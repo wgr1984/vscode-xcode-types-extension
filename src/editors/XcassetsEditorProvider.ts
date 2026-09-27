@@ -100,6 +100,9 @@ export class XcassetsEditorProvider implements vscode.CustomEditorProvider<Xcass
         } else if (msg.type === 'setGrid') {
           document.setGrid(msg.assetId, msg.grid)
           push('update')
+        } else if (msg.type === 'setAppIconGrid') {
+          document.setAppIconGrid(msg.assetId, msg.grid)
+          push('update')
         } else if (msg.type === 'setSlotProperty') {
           document.setSlotProperty(
             msg.assetId,

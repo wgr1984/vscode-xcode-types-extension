@@ -53,6 +53,14 @@ export type ImageGridView = {
   graphics: string[]
 }
 
+export type AppIconGridView = {
+  ios: 'none' | 'single' | 'all'
+  macos: 'none' | 'all'
+  watchos: 'none' | 'all'
+  appearances: 'any' | 'any-dark' | 'any-dark-tinted'
+  gamut: 'any' | 'both'
+}
+
 export type AssetDetail = {
   id: string
   kind: string
@@ -62,6 +70,7 @@ export type AssetDetail = {
   /** imageset / colorset grid inspector */
   grid?: ImageGridView
   gridKind?: 'imageset' | 'colorset'
+  appIconGrid?: AppIconGridView
   selectedSlotIndex?: number
   slotProperties?: PropertyFieldView[]
 }
@@ -102,6 +111,11 @@ export type WebToHost =
       type: 'setGrid'
       assetId: string
       grid: ImageGridView
+    }
+  | {
+      type: 'setAppIconGrid'
+      assetId: string
+      grid: AppIconGridView
     }
   | {
       type: 'setSlotProperty'

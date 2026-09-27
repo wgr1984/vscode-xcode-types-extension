@@ -125,3 +125,4 @@ Spec: (pending) `superpowers/specs/2026-09-27-xcassets-design.md`
 | T10.14 | Colorset grid + slot (appearances/gamut/space) | done | |
 | T10.15 | Reveal selected asset folder in Explorer | done | `revealInExplorer` on nav select |
 | T10.16 | Fix add asset (`window.prompt` broken in webview) | done | host `showInputBox` |
+| T10.17 | App Icon inspector (iOS/macOS/watchOS/appearances) | done | `appIconGrid.ts` |

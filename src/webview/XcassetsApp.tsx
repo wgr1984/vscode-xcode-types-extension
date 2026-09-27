@@ -1,6 +1,7 @@
 import { useEffect, useState, type DragEvent } from 'react'
 import { hexToRgba, rgbaCss, rgbaToHex } from './colorRgba'
 import type {
+  AppIconGridView,
   HostToWeb,
   ImageGridView,
   PropertyFieldView,
@@ -195,6 +196,102 @@ function SlotPropertiesPanel({
 function toggleList(list: string[], id: string, on: boolean): string[] {
   if (on) return list.includes(id) ? list : [...list, id]
   return list.filter((x) => x !== id)
+}
+
+function AppIconGridPanel({
+  assetId,
+  grid,
+}: {
+  assetId: string
+  grid: AppIconGridView
+}) {
+  const push = (next: AppIconGridView) =>
+    vscode.postMessage({ type: 'setAppIconGrid', assetId, grid: next })
+
+  return (
+    <section className="mb-4 p-3 border border-[var(--vscode-panel-border,#555)] rounded-sm max-w-lg space-y-3">
+      <h3 className="text-xs font-medium opacity-80">App Icon</h3>
+      <label className="flex items-center gap-2 text-xs min-w-0">
+        <span className="w-28 shrink-0 opacity-80">iOS</span>
+        <select
+          className="min-w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+          value={grid.ios}
+          onChange={(e) =>
+            push({ ...grid, ios: e.target.value as AppIconGridView['ios'] })
+          }
+        >
+          <option value="none">None</option>
+          <option value="single">Single Size</option>
+          <option value="all">All Sizes (Xcode 13)</option>
+        </select>
+      </label>
+      <label className="flex items-center gap-2 text-xs min-w-0">
+        <span className="w-28 shrink-0 opacity-80">macOS</span>
+        <select
+          className="min-w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+          value={grid.macos}
+          onChange={(e) =>
+            push({
+              ...grid,
+              macos: e.target.value as AppIconGridView['macos'],
+            })
+          }
+        >
+          <option value="none">None</option>
+          <option value="all">All Sizes</option>
+        </select>
+      </label>
+      <label className="flex items-center gap-2 text-xs min-w-0">
+        <span className="w-28 shrink-0 opacity-80">watchOS</span>
+        <select
+          className="min-w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+          value={grid.watchos}
+          onChange={(e) =>
+            push({
+              ...grid,
+              watchos: e.target.value as AppIconGridView['watchos'],
+            })
+          }
+        >
+          <option value="none">None</option>
+          <option value="all">All Sizes</option>
+        </select>
+      </label>
+      <label className="flex items-center gap-2 text-xs min-w-0">
+        <span className="w-28 shrink-0 opacity-80">Appearances</span>
+        <select
+          className="min-w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+          value={grid.appearances}
+          onChange={(e) =>
+            push({
+              ...grid,
+              appearances: e.target.value as AppIconGridView['appearances'],
+            })
+          }
+        >
+          <option value="any">None</option>
+          <option value="any-dark">Any, Dark</option>
+          <option value="any-dark-tinted">Any, Dark, Tinted</option>
+        </select>
+      </label>
+      <label className="flex items-center gap-2 text-xs min-w-0">
+        <span className="w-28 shrink-0 opacity-80">Gamut</span>
+        <select
+          className="min-w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+          value={grid.gamut}
+          onChange={(e) =>
+            push({
+              ...grid,
+              gamut: e.target.value as AppIconGridView['gamut'],
+            })
+          }
+        >
+          <option value="any">Any</option>
+          <option value="both">sRGB and Display P3</option>
+        </select>
+      </label>
+    </section>
+  )
 }
 
 function GridPanel({
@@ -690,6 +787,12 @@ export function XcassetsApp() {
             {detail.properties && detail.properties.length > 0 && (
               <PropertiesPanel assetId={detail.id} fields={detail.properties} />
             )}
+            {detail.appIconGrid && (
+              <AppIconGridPanel
+                assetId={detail.id}
+                grid={detail.appIconGrid}
+              />
+            )}
             {detail.grid && detail.gridKind && (
               <GridPanel
                 assetId={detail.id}
@@ -719,7 +822,9 @@ export function XcassetsApp() {
             {detail.slots.length === 0 && (
               <p className="opacity-70">No slots in Contents.json</p>
             )}
-            {(detail.kind === 'imageset' || detail.kind === 'colorset') && (
+            {(detail.kind === 'imageset' ||
+              detail.kind === 'colorset' ||
+              detail.kind === 'appiconset') && (
               <p className="text-[10px] opacity-50 mt-3">
                 Click a well to edit that slot. Grid toggles reshape all wells.
               </p>
