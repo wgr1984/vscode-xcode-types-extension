@@ -14,8 +14,11 @@ import {
   type SlotInfo,
 } from '../xcassets/model'
 import {
+  applyColorGrid,
   applyImageGrid,
+  inferColorGrid,
   inferImageGrid,
+  type ColorGridConfig,
   type ImageGridConfig,
 } from '../xcassets/grid'
 import {
@@ -203,20 +206,37 @@ export class XcassetsDocument implements vscode.CustomDocument {
             this.slotToView(node, s, webview),
           )
           const slotIdx = this.selectedSlotIndex
+          const gridKind =
+            node.kind === 'imageset' || node.kind === 'colorset'
+              ? node.kind
+              : undefined
           detail = {
             id: node.id,
             kind: node.kind,
             slots,
             properties: propertyFieldsFor(node.kind, contents),
             grid:
-              node.kind === 'imageset' ? inferImageGrid(contents) : undefined,
+              node.kind === 'imageset'
+                ? inferImageGrid(contents)
+                : node.kind === 'colorset'
+                  ? {
+                      ...inferColorGrid(contents),
+                      individualScales: false,
+                      direction: 'fixed',
+                      widthClass: false,
+                      heightClass: false,
+                      memory: [],
+                      graphics: [],
+                    }
+                  : undefined,
+            gridKind,
             selectedSlotIndex: slotIdx,
             slotProperties:
-              node.kind === 'imageset' &&
+              (node.kind === 'imageset' || node.kind === 'colorset') &&
               slotIdx !== undefined &&
               slotIdx >= 0 &&
               slotIdx < slots.length
-                ? slotFieldsFor(contents, slotIdx)
+                ? slotFieldsFor(node.kind, contents, slotIdx)
                 : undefined,
           }
         }
@@ -318,12 +338,24 @@ export class XcassetsDocument implements vscode.CustomDocument {
 
   setGrid(assetId: string, grid: ImageGridConfig | Record<string, unknown>): void {
     const node = findNode(this.tree, assetId)
-    if (!node || node.kind !== 'imageset') {
-      throw new Error('Grid applies to imageset only')
+    if (!node) throw new Error(`Unknown asset ${assetId}`)
+    if (node.kind === 'imageset') {
+      this.mutateContents(assetId, (c) =>
+        applyImageGrid(c, grid as ImageGridConfig),
+      )
+    } else if (node.kind === 'colorset') {
+      const g = grid as ColorGridConfig
+      this.mutateContents(assetId, (c) =>
+        applyColorGrid(c, {
+          devices: g.devices,
+          appearances: g.appearances,
+          highContrast: g.highContrast,
+          gamut: g.gamut,
+        }),
+      )
+    } else {
+      throw new Error('Grid applies to imageset/colorset only')
     }
-    this.mutateContents(assetId, (c) =>
-      applyImageGrid(c, grid as ImageGridConfig),
-    )
     this.selectedSlotIndex = undefined
   }
 
@@ -333,8 +365,10 @@ export class XcassetsDocument implements vscode.CustomDocument {
     key: string,
     value: boolean | string,
   ): void {
+    const node = findNode(this.tree, assetId)
+    if (!node) throw new Error(`Unknown asset ${assetId}`)
     this.mutateContents(assetId, (c) =>
-      setSlotAttribute(c, slotIndex, key, value),
+      setSlotAttribute(node.kind, c, slotIndex, key, value),
     )
   }
 

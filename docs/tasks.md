@@ -122,3 +122,4 @@ Spec: (pending) `superpowers/specs/2026-09-27-xcassets-design.md`
 | T10.11 | Attributes v2 — set properties (compression, ODR, …) | done | |
 | T10.12 | Attributes v2 — grid reshape (Devices/Appearances/…) | done | `src/xcassets/grid.ts` |
 | T10.13 | Attributes v2 — per-slot panel | done | click well → slot attrs |
+| T10.14 | Colorset grid + slot (appearances/gamut/space) | done | |

@@ -310,3 +310,114 @@ export function applyImageGrid(
   root.images = next
   return root
 }
+
+/** Colorset grid: devices / appearances / gamut only (no scales). */
+export type ColorGridConfig = {
+  devices: DeviceId[]
+  appearances: 'any' | 'any-dark' | 'light-dark'
+  highContrast: boolean
+  gamut: 'any' | 'both'
+}
+
+export function colorSlotIdentity(slot: Slot): string {
+  return [
+    `idiom=${slot.idiom ?? ''}`,
+    `subtype=${slot.subtype ?? ''}`,
+    `appearances=${appearancesKey(slot)}`,
+    `gamut=${slot['display-gamut'] ?? ''}`,
+  ].join(';')
+}
+
+const DEFAULT_COLOR = {
+  'color-space': 'srgb',
+  components: {
+    red: '0.000',
+    green: '0.000',
+    blue: '0.000',
+    alpha: '1.000',
+  },
+}
+
+export function inferColorGrid(contents: unknown): ColorGridConfig {
+  const empty: ColorGridConfig = {
+    devices: ['universal'],
+    appearances: 'any',
+    highContrast: false,
+    gamut: 'any',
+  }
+  if (!contents || typeof contents !== 'object') return empty
+  const colors = (contents as { colors?: unknown }).colors
+  if (!Array.isArray(colors) || colors.length === 0) return empty
+  const slots = colors.filter((x): x is Slot => !!x && typeof x === 'object')
+  const devices = new Set<DeviceId>()
+  let hasDark = false
+  let hasLight = false
+  let hasContrast = false
+  let hasGamut = false
+  for (const s of slots) {
+    const d = deviceOf(s)
+    if (d) devices.add(d)
+    if (s['display-gamut']) hasGamut = true
+    const apps = s.appearances
+    if (Array.isArray(apps)) {
+      for (const a of apps) {
+        if (!a || typeof a !== 'object') continue
+        const o = a as { appearance?: string; value?: string }
+        if (o.appearance === 'luminosity' && o.value === 'dark') hasDark = true
+        if (o.appearance === 'luminosity' && o.value === 'light') hasLight = true
+        if (o.appearance === 'contrast') hasContrast = true
+      }
+    }
+  }
+  let appearances: ColorGridConfig['appearances'] = 'any'
+  if (hasLight && hasDark) appearances = 'light-dark'
+  else if (hasDark) appearances = 'any-dark'
+  const deviceList = [...devices]
+  return {
+    devices: deviceList.length ? deviceList : ['universal'],
+    appearances,
+    highContrast: hasContrast,
+    gamut: hasGamut ? 'both' : 'any',
+  }
+}
+
+function buildColorSlots(config: ColorGridConfig): Slot[] {
+  const devices =
+    config.devices.length > 0 ? config.devices : (['universal'] as DeviceId[])
+  const appVars = appearanceVariants(config.appearances, config.highContrast)
+  const gamuts = opts(config.gamut === 'both', ['sRGB', 'display-P3'])
+  const out: Slot[] = []
+  for (const device of devices) {
+    for (const apps of appVars) {
+      for (const gamut of gamuts) {
+        const slot: Slot = { ...baseDeviceSlot(device) }
+        if (apps) slot.appearances = apps
+        if (gamut) slot['display-gamut'] = gamut
+        out.push(slot)
+      }
+    }
+  }
+  return out
+}
+
+/** Reshape colors[]; keep `color` payload when identity matches. */
+export function applyColorGrid(
+  contents: unknown,
+  config: ColorGridConfig,
+): unknown {
+  if (!contents || typeof contents !== 'object') {
+    throw new Error('Contents.json root must be an object')
+  }
+  const root = clone(contents) as Record<string, unknown>
+  const prev = Array.isArray(root.colors) ? (root.colors as Slot[]) : []
+  const byId = new Map<string, unknown>()
+  for (const s of prev) {
+    if (!s || typeof s !== 'object') continue
+    if (s.color !== undefined) byId.set(colorSlotIdentity(s), s.color)
+  }
+  root.colors = buildColorSlots(config).map((s) => {
+    const color = byId.get(colorSlotIdentity(s)) ?? clone(DEFAULT_COLOR)
+    return { ...s, color }
+  })
+  return root
+}

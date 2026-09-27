@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyColorGrid,
   applyImageGrid,
+  inferColorGrid,
   inferImageGrid,
   slotIdentity,
   type ImageGridConfig,
@@ -88,5 +90,34 @@ describe('grid', () => {
       appearances: [{ appearance: 'luminosity', value: 'dark' }],
     })
     expect(a).toBe(b)
+  })
+
+  it('color grid adds dark and keeps color payload', () => {
+    const prev = {
+      colors: [
+        {
+          idiom: 'universal',
+          color: {
+            'color-space': 'srgb',
+            components: { red: '0.1', green: '0', blue: '0', alpha: '1' },
+          },
+        },
+      ],
+    }
+    const next = applyColorGrid(prev, {
+      devices: ['universal'],
+      appearances: 'any-dark',
+      highContrast: false,
+      gamut: 'any',
+    }) as {
+      colors: {
+        appearances?: unknown
+        color: { components: { red: string } }
+      }[]
+    }
+    expect(next.colors).toHaveLength(2)
+    const any = next.colors.find((c) => !c.appearances)
+    expect(any?.color.components.red).toBe('0.1')
+    expect(inferColorGrid(next).appearances).toBe('any-dark')
   })
 })

@@ -59,8 +59,9 @@ export type AssetDetail = {
   slots: SlotView[]
   unsupported?: boolean
   properties?: PropertyFieldView[]
-  /** imageset grid inspector */
+  /** imageset / colorset grid inspector */
   grid?: ImageGridView
+  gridKind?: 'imageset' | 'colorset'
   selectedSlotIndex?: number
   slotProperties?: PropertyFieldView[]
 }

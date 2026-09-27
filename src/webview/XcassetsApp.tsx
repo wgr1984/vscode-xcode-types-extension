@@ -200,12 +200,15 @@ function toggleList(list: string[], id: string, on: boolean): string[] {
 function GridPanel({
   assetId,
   grid,
+  mode,
 }: {
   assetId: string
   grid: ImageGridView
+  mode: 'imageset' | 'colorset'
 }) {
   const push = (next: ImageGridView) =>
     vscode.postMessage({ type: 'setGrid', assetId, grid: next })
+  const imageOnly = mode === 'imageset'
 
   return (
     <section className="mb-4 p-3 border border-[var(--vscode-panel-border,#555)] rounded-sm max-w-lg space-y-3">
@@ -255,16 +258,18 @@ function GridPanel({
         />
         High Contrast
       </label>
-      <label className="flex items-center gap-2 text-xs">
-        <input
-          type="checkbox"
-          checked={grid.individualScales}
-          onChange={(e) =>
-            push({ ...grid, individualScales: e.target.checked })
-          }
-        />
-        Individual Scales
-      </label>
+      {imageOnly && (
+        <label className="flex items-center gap-2 text-xs">
+          <input
+            type="checkbox"
+            checked={grid.individualScales}
+            onChange={(e) =>
+              push({ ...grid, individualScales: e.target.checked })
+            }
+          />
+          Individual Scales
+        </label>
+      )}
       <label className="flex items-center gap-2 text-xs min-w-0">
         <span className="w-28 shrink-0 opacity-80">Gamut</span>
         <select
@@ -278,78 +283,82 @@ function GridPanel({
           <option value="both">sRGB and Display P3</option>
         </select>
       </label>
-      <label className="flex items-center gap-2 text-xs min-w-0">
-        <span className="w-28 shrink-0 opacity-80">Direction</span>
-        <select
-          className="min-w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
-          value={grid.direction}
-          onChange={(e) =>
-            push({
-              ...grid,
-              direction: e.target.value as ImageGridView['direction'],
-            })
-          }
-        >
-          <option value="fixed">Fixed</option>
-          <option value="both">Left and Right</option>
-        </select>
-      </label>
-      <label className="flex items-center gap-2 text-xs">
-        <input
-          type="checkbox"
-          checked={grid.widthClass}
-          onChange={(e) => push({ ...grid, widthClass: e.target.checked })}
-        />
-        Width Class (compact / regular)
-      </label>
-      <label className="flex items-center gap-2 text-xs">
-        <input
-          type="checkbox"
-          checked={grid.heightClass}
-          onChange={(e) => push({ ...grid, heightClass: e.target.checked })}
-        />
-        Height Class (compact / regular)
-      </label>
-      <div>
-        <div className="text-[10px] uppercase opacity-60 mb-1">Memory</div>
-        <div className="flex flex-wrap gap-2">
-          {MEMORY_OPTIONS.map((m) => (
-            <label key={m} className="flex items-center gap-1 text-xs">
-              <input
-                type="checkbox"
-                checked={grid.memory.includes(m)}
-                onChange={(e) =>
-                  push({
-                    ...grid,
-                    memory: toggleList(grid.memory, m, e.target.checked),
-                  })
-                }
-              />
-              {m}
-            </label>
-          ))}
-        </div>
-      </div>
-      <div>
-        <div className="text-[10px] uppercase opacity-60 mb-1">Graphics</div>
-        <div className="flex flex-wrap gap-2">
-          {GRAPHICS_OPTIONS.map((g) => (
-            <label key={g} className="flex items-center gap-1 text-xs">
-              <input
-                type="checkbox"
-                checked={grid.graphics.includes(g)}
-                onChange={(e) =>
-                  push({
-                    ...grid,
-                    graphics: toggleList(grid.graphics, g, e.target.checked),
-                  })
-                }
-              />
-              {g}
-            </label>
-          ))}
-        </div>
-      </div>
+      {imageOnly && (
+        <>
+          <label className="flex items-center gap-2 text-xs min-w-0">
+            <span className="w-28 shrink-0 opacity-80">Direction</span>
+            <select
+              className="min-w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+              value={grid.direction}
+              onChange={(e) =>
+                push({
+                  ...grid,
+                  direction: e.target.value as ImageGridView['direction'],
+                })
+              }
+            >
+              <option value="fixed">Fixed</option>
+              <option value="both">Left and Right</option>
+            </select>
+          </label>
+          <label className="flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={grid.widthClass}
+              onChange={(e) => push({ ...grid, widthClass: e.target.checked })}
+            />
+            Width Class (compact / regular)
+          </label>
+          <label className="flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={grid.heightClass}
+              onChange={(e) => push({ ...grid, heightClass: e.target.checked })}
+            />
+            Height Class (compact / regular)
+          </label>
+          <div>
+            <div className="text-[10px] uppercase opacity-60 mb-1">Memory</div>
+            <div className="flex flex-wrap gap-2">
+              {MEMORY_OPTIONS.map((m) => (
+                <label key={m} className="flex items-center gap-1 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={grid.memory.includes(m)}
+                    onChange={(e) =>
+                      push({
+                        ...grid,
+                        memory: toggleList(grid.memory, m, e.target.checked),
+                      })
+                    }
+                  />
+                  {m}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase opacity-60 mb-1">Graphics</div>
+            <div className="flex flex-wrap gap-2">
+              {GRAPHICS_OPTIONS.map((g) => (
+                <label key={g} className="flex items-center gap-1 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={grid.graphics.includes(g)}
+                    onChange={(e) =>
+                      push({
+                        ...grid,
+                        graphics: toggleList(grid.graphics, g, e.target.checked),
+                      })
+                    }
+                  />
+                  {g}
+                </label>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </section>
   )
 }
@@ -357,9 +366,11 @@ function GridPanel({
 function ColorWell({
   assetId,
   slot,
+  selected,
 }: {
   assetId: string
   slot: SlotView
+  selected?: boolean
 }) {
   const remote = slot.rgba ?? FALLBACK_RGBA
   const [rgba, setRgba] = useState(remote)
@@ -391,7 +402,20 @@ function ColorWell({
   }
 
   return (
-    <div className="border border-[var(--vscode-panel-border,#555)] p-2 w-44 box-border overflow-hidden">
+    <div
+      className={`border p-2 w-44 box-border overflow-hidden cursor-pointer ${
+        selected
+          ? 'border-[var(--vscode-focusBorder,#007fd4)]'
+          : 'border-[var(--vscode-panel-border,#555)]'
+      }`}
+      onClick={() =>
+        vscode.postMessage({
+          type: 'selectSlot',
+          assetId,
+          slotIndex: slot.index,
+        })
+      }
+    >
       <div className="text-xs opacity-70 mb-2 truncate" title={slot.label}>
         {slot.label}
       </div>
@@ -472,7 +496,7 @@ function Well({
   }
 
   if (kind === 'colorset') {
-    return <ColorWell assetId={assetId} slot={slot} />
+    return <ColorWell assetId={assetId} slot={slot} selected={selected} />
   }
 
   return (
@@ -671,8 +695,12 @@ export function XcassetsApp() {
             {detail.properties && detail.properties.length > 0 && (
               <PropertiesPanel assetId={detail.id} fields={detail.properties} />
             )}
-            {detail.grid && (
-              <GridPanel assetId={detail.id} grid={detail.grid} />
+            {detail.grid && detail.gridKind && (
+              <GridPanel
+                assetId={detail.id}
+                grid={detail.grid}
+                mode={detail.gridKind}
+              />
             )}
             {detail.slotProperties &&
               detail.selectedSlotIndex !== undefined && (
@@ -696,7 +724,7 @@ export function XcassetsApp() {
             {detail.slots.length === 0 && (
               <p className="opacity-70">No slots in Contents.json</p>
             )}
-            {detail.kind === 'imageset' && (
+            {(detail.kind === 'imageset' || detail.kind === 'colorset') && (
               <p className="text-[10px] opacity-50 mt-3">
                 Click a well to edit that slot. Grid toggles reshape all wells.
               </p>
