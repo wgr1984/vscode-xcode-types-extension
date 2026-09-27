@@ -67,6 +67,9 @@ body {
 .raw-editor {
   width: 100%;
   min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--vscode-panel-border, #3c3c3c);
+  border-radius: 2px;
 }
 .raw-editor__stack {
   display: grid;
