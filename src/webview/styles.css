@@ -62,22 +62,36 @@ body {
   color: var(--vscode-symbolIcon-variableForeground, #d16969);
 }
 
-/* raw editor: fill window width; expand for long lines; one scroll parent */
+/* raw editor: full-width wrap; shared metrics so pre/textarea stay aligned */
 .raw-editor__stack {
   display: grid;
-  grid-template-columns: minmax(100%, max-content);
+  grid-template-columns: minmax(0, 1fr);
   width: 100%;
 }
-.raw-editor__pre,
-.raw-editor__textarea {
+.raw-editor__layer {
   grid-area: 1 / 1;
-  width: 100%;
-  min-width: 100%;
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  width: 100%;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  tab-size: 4;
 }
-
-/* raw editor: textarea must not paint over Prism colors */
+.raw-editor__pre {
+  overflow: hidden;
+}
 .raw-editor__textarea {
+  display: block;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
   color: transparent !important;
   -webkit-text-fill-color: transparent !important;
   caret-color: var(--vscode-editorCursor-foreground, #aeafad);

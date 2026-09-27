@@ -57,6 +57,7 @@ export function RawEditor({ text, languageId, errorLines, onChange }: Props) {
   const [local, setLocal] = useState(text)
   const dirty = useRef(false)
   const taRef = useRef<HTMLTextAreaElement>(null)
+  const preRef = useRef<HTMLPreElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const errorSet = useMemo(
     () => new Set(errorLines ?? []),
@@ -66,19 +67,6 @@ export function RawEditor({ text, languageId, errorLines, onChange }: Props) {
   useEffect(() => {
     if (!dirty.current) setLocal(text)
   }, [text])
-
-  useLayoutEffect(() => {
-    const ta = taRef.current
-    if (!ta) return
-    // VS Code webview injects textarea color !important — beat it.
-    ta.style.setProperty('color', 'transparent', 'important')
-    ta.style.setProperty('-webkit-text-fill-color', 'transparent', 'important')
-    ta.style.setProperty(
-      'caret-color',
-      'var(--vscode-editorCursor-foreground, #aeafad)',
-      'important',
-    )
-  }, [])
 
   const lang = prismLangFor(languageId)
 
@@ -101,6 +89,29 @@ export function RawEditor({ text, languageId, errorLines, onChange }: Props) {
       .join('\n')
   }, [local, lang, errorSet])
 
+  useLayoutEffect(() => {
+    const ta = taRef.current
+    const pre = preRef.current
+    if (!ta) return
+    // VS Code webview injects textarea color !important — beat it.
+    ta.style.setProperty('color', 'transparent', 'important')
+    ta.style.setProperty('-webkit-text-fill-color', 'transparent', 'important')
+    ta.style.setProperty(
+      'caret-color',
+      'var(--vscode-editorCursor-foreground, #aeafad)',
+      'important',
+    )
+    const fit = () => {
+      ta.style.height = '0px'
+      const h = Math.max(ta.scrollHeight, pre?.scrollHeight ?? 0)
+      ta.style.height = `${h}px`
+    }
+    fit()
+    const ro = new ResizeObserver(fit)
+    ro.observe(ta.parentElement ?? ta)
+    return () => ro.disconnect()
+  }, [local, html])
+
   const emit = (next: string) => {
     setLocal(next)
     dirty.current = true
@@ -117,26 +128,21 @@ export function RawEditor({ text, languageId, errorLines, onChange }: Props) {
     }
   }, [])
 
-  const lineCount = Math.max(local.split('\n').length, 1)
-  // One scroll parent — dual overflow-auto desyncs caret after ~1 page.
-  const layer =
-    'm-0 border-0 p-0 font-mono text-sm leading-5 whitespace-pre [tab-size:4]'
-
   return (
     <div className="raw-editor h-full min-h-0 overflow-auto bg-[var(--vscode-editor-background)] p-3">
       <div className="raw-editor__stack">
         <pre
+          ref={preRef}
           aria-hidden
-          className={`${layer} raw-editor__pre pointer-events-none text-[#d4d4d4]`}
+          className="raw-editor__layer raw-editor__pre pointer-events-none text-[#d4d4d4]"
           dangerouslySetInnerHTML={{ __html: html }}
         />
         <textarea
           ref={taRef}
           value={local}
-          rows={lineCount}
           spellCheck={false}
           onChange={(e) => emit(e.target.value)}
-          className={`${layer} raw-editor__textarea resize-none overflow-hidden bg-transparent`}
+          className="raw-editor__layer raw-editor__textarea"
         />
       </div>
     </div>
