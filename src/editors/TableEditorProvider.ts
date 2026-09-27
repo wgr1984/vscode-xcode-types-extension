@@ -7,6 +7,7 @@ type WebToHost =
   | { type: 'ready' }
   | { type: 'edit'; rows: Row[] }
   | { type: 'refresh' }
+  | { type: 'editRaw'; text: string }
 
 const EXT_TO_LANG: Record<string, string> = {
   '.plist': 'plist',
@@ -65,7 +66,13 @@ export class TableEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     const send = (type: 'init' | 'update', model: TableModel) => {
-      webviewPanel.webview.postMessage({ type, model })
+      const languageId = resolveLanguageId(document)
+      webviewPanel.webview.postMessage({
+        type,
+        model,
+        text: document.getText(),
+        languageId,
+      })
     }
 
     const parseDoc = (): TableModel => {
@@ -111,6 +118,19 @@ export class TableEditorProvider implements vscode.CustomTextEditorProvider {
       await vscode.workspace.applyEdit(edit)
     }
 
+    const applyRaw = async (text: string) => {
+      rememberOwnWrite(text)
+      const edit = new vscode.WorkspaceEdit()
+      const full = new vscode.Range(
+        document.positionAt(0),
+        document.positionAt(document.getText().length),
+      )
+      edit.replace(document.uri, full, text)
+      await vscode.workspace.applyEdit(edit)
+      // Own-write suppress skips change listener — push banner/model explicitly.
+      send('update', parseDoc())
+    }
+
     webviewPanel.webview.onDidReceiveMessage(async (msg: WebToHost) => {
       if (msg.type === 'ready') {
         send('init', parseDoc())
@@ -118,6 +138,8 @@ export class TableEditorProvider implements vscode.CustomTextEditorProvider {
         await applyRows(msg.rows)
       } else if (msg.type === 'refresh') {
         send('update', parseDoc())
+      } else if (msg.type === 'editRaw') {
+        await applyRaw(msg.text)
       }
     })
 

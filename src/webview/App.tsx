@@ -1,15 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Row, TableModel } from '../adapters/types'
+import { RawEditor } from './RawEditor'
 import { Table } from './Table'
 
 const vscodeApi = acquireVsCodeApi()
 
 type HostMsg =
-  | { type: 'init'; model: TableModel }
-  | { type: 'update'; model: TableModel }
+  | { type: 'init'; model: TableModel; text: string; languageId: string }
+  | { type: 'update'; model: TableModel; text: string; languageId: string }
+
+type Mode = 'table' | 'raw'
 
 export function App() {
   const [model, setModel] = useState<TableModel | null>(null)
+  const [text, setText] = useState('')
+  const [languageId, setLanguageId] = useState('plaintext')
+  const [mode, setMode] = useState<Mode>('table')
   const editingRef = useRef(false)
 
   useEffect(() => {
@@ -19,6 +25,8 @@ export function App() {
       if (msg.type === 'update' && editingRef.current) return
       if (msg.type === 'init' || msg.type === 'update') {
         setModel(msg.model)
+        setText(msg.text)
+        setLanguageId(msg.languageId)
       }
     }
     window.addEventListener('message', handler)
@@ -37,8 +45,29 @@ export function App() {
     vscodeApi.postMessage({ type: 'edit', rows })
   }
 
+  const onRawChange = (next: string) => {
+    setText(next)
+    vscodeApi.postMessage({ type: 'editRaw', text: next })
+  }
+
   return (
     <div>
+      <div className="flex gap-2 px-3 py-2 border-b border-[var(--vscode-panel-border)]">
+        <button
+          type="button"
+          className={`px-2 py-0.5 ${mode === 'table' ? 'font-semibold underline' : 'opacity-70'}`}
+          onClick={() => setMode('table')}
+        >
+          Table
+        </button>
+        <button
+          type="button"
+          className={`px-2 py-0.5 ${mode === 'raw' ? 'font-semibold underline' : 'opacity-70'}`}
+          onClick={() => setMode('raw')}
+        >
+          Raw
+        </button>
+      </div>
       {model.banner && (
         <div
           className={`px-3 py-2 ${
@@ -50,17 +79,21 @@ export function App() {
           {model.banner.text}
         </div>
       )}
-      <Table
-        columns={model.columns}
-        rows={model.rows}
-        disabled={disabled}
-        onChange={onChange}
-        onEditingChange={(v) => {
-          editingRef.current = v
-          // own writes skip doc→webview; reparse once focus leaves table
-          if (!v) vscodeApi.postMessage({ type: 'refresh' })
-        }}
-      />
+      {mode === 'table' ? (
+        <Table
+          columns={model.columns}
+          rows={model.rows}
+          disabled={disabled}
+          onChange={onChange}
+          onEditingChange={(v) => {
+            editingRef.current = v
+            // own writes skip doc→webview; reparse once focus leaves table
+            if (!v) vscodeApi.postMessage({ type: 'refresh' })
+          }}
+        />
+      ) : (
+        <RawEditor text={text} languageId={languageId} onChange={onRawChange} />
+      )}
     </div>
   )
 }

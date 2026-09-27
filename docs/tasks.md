@@ -79,3 +79,15 @@ Spec: [plist-types-nesting-design](./superpowers/specs/2026-09-23-plist-types-ne
 |----|------|--------|-------|
 | T7.1 | xcconfig/xcstrings Add row vanish | done | keep empty-key drafts; defer applying flag |
 | T7.2 | No row resort/remount while editing | done | hold updates while focused; refresh on blur |
+
+## Phase 8 — Raw edit mode
+
+Spec: [raw-edit-mode-design](./superpowers/specs/2026-09-27-raw-edit-mode-design.md)
+
+| ID | Task | Status | Notes |
+|----|------|--------|-------|
+| T8.0 | Design approve + plan | done | plan: `superpowers/plans/2026-09-27-raw-edit-mode.md` |
+| T8.1 | App toggle + messages (`editRaw`, text on init) | done | |
+| T8.2 | RawEditor (textarea + Prism mirror) | done | |
+| T8.3 | Host write + validate path | done | always write |
+| T8.4 | Manual F5 smoke | todo | you: toggle, break XML, fix, table |
