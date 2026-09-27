@@ -14,9 +14,15 @@ import {
   type SlotInfo,
 } from '../xcassets/model'
 import {
+  applyImageGrid,
+  inferImageGrid,
+  type ImageGridConfig,
+} from '../xcassets/grid'
+import {
   propertyFieldsFor,
   setContentsProperty,
 } from '../xcassets/properties'
+import { setSlotAttribute, slotFieldsFor } from '../xcassets/slotAttrs'
 import {
   defaultContentsJson,
   folderNameFor,
@@ -61,6 +67,7 @@ export class XcassetsDocument implements vscode.CustomDocument {
 
   tree!: CatalogNode
   selectionId?: string
+  selectedSlotIndex?: number
   banner?: { level: 'error' | 'info'; text: string }
   private dirty = false
   private ownWrite = false
@@ -195,11 +202,22 @@ export class XcassetsDocument implements vscode.CustomDocument {
           const slots = slotsFromContents(node.kind, contents).map((s) =>
             this.slotToView(node, s, webview),
           )
+          const slotIdx = this.selectedSlotIndex
           detail = {
             id: node.id,
             kind: node.kind,
             slots,
             properties: propertyFieldsFor(node.kind, contents),
+            grid:
+              node.kind === 'imageset' ? inferImageGrid(contents) : undefined,
+            selectedSlotIndex: slotIdx,
+            slotProperties:
+              node.kind === 'imageset' &&
+              slotIdx !== undefined &&
+              slotIdx >= 0 &&
+              slotIdx < slots.length
+                ? slotFieldsFor(contents, slotIdx)
+                : undefined,
           }
         }
       }
@@ -239,6 +257,12 @@ export class XcassetsDocument implements vscode.CustomDocument {
 
   select(assetId: string): void {
     this.selectionId = assetId
+    this.selectedSlotIndex = undefined
+  }
+
+  selectSlot(assetId: string, slotIndex: number | undefined): void {
+    this.selectionId = assetId
+    this.selectedSlotIndex = slotIndex
   }
 
   private mutateContents(
@@ -290,6 +314,28 @@ export class XcassetsDocument implements vscode.CustomDocument {
     this.stagedContents.set(assetId, next)
     node.contents = next
     this.markDirty()
+  }
+
+  setGrid(assetId: string, grid: ImageGridConfig | Record<string, unknown>): void {
+    const node = findNode(this.tree, assetId)
+    if (!node || node.kind !== 'imageset') {
+      throw new Error('Grid applies to imageset only')
+    }
+    this.mutateContents(assetId, (c) =>
+      applyImageGrid(c, grid as ImageGridConfig),
+    )
+    this.selectedSlotIndex = undefined
+  }
+
+  setSlotProperty(
+    assetId: string,
+    slotIndex: number,
+    key: string,
+    value: boolean | string,
+  ): void {
+    this.mutateContents(assetId, (c) =>
+      setSlotAttribute(c, slotIndex, key, value),
+    )
   }
 
   applyDrop(

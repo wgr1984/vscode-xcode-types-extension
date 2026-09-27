@@ -119,6 +119,6 @@ Spec: (pending) `superpowers/specs/2026-09-27-xcassets-design.md`
 | T10.8 | CustomEditorProvider + catalog model + webview | done | wells, drop, color, add/delete |
 | T10.9 | Tests + contributes (command / context) | done | F5 smoke: you |
 | T10.10 | Deep research Attributes (set vs slot) | done | [xcassets-attributes.md](./research/xcassets-attributes.md) |
-| T10.11 | Attributes v2 — set properties (compression, ODR, …) | todo | after slice pick |
-| T10.12 | Attributes v2 — grid reshape (Devices/Appearances/…) | todo | |
-| T10.13 | Attributes v2 — per-slot panel | todo | |
+| T10.11 | Attributes v2 — set properties (compression, ODR, …) | done | |
+| T10.12 | Attributes v2 — grid reshape (Devices/Appearances/…) | done | `src/xcassets/grid.ts` |
+| T10.13 | Attributes v2 — per-slot panel | done | click well → slot attrs |

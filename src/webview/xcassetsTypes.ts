@@ -18,14 +18,6 @@ export type FlatAsset = {
   parseError?: string
 }
 
-export type AssetDetail = {
-  id: string
-  kind: string
-  slots: SlotView[]
-  unsupported?: boolean
-  properties?: PropertyFieldView[]
-}
-
 export type PropertyFieldView =
   | {
       key: string
@@ -40,6 +32,38 @@ export type PropertyFieldView =
       value: string
       options: { value: string; label: string }[]
     }
+  | {
+      key: string
+      label: string
+      type: 'string'
+      value: string
+      placeholder?: string
+    }
+
+export type ImageGridView = {
+  devices: string[]
+  appearances: 'any' | 'any-dark' | 'light-dark'
+  highContrast: boolean
+  individualScales: boolean
+  gamut: 'any' | 'both'
+  direction: 'fixed' | 'both'
+  widthClass: boolean
+  heightClass: boolean
+  memory: string[]
+  graphics: string[]
+}
+
+export type AssetDetail = {
+  id: string
+  kind: string
+  slots: SlotView[]
+  unsupported?: boolean
+  properties?: PropertyFieldView[]
+  /** imageset grid inspector */
+  grid?: ImageGridView
+  selectedSlotIndex?: number
+  slotProperties?: PropertyFieldView[]
+}
 
 export type XcassetsViewModel = {
   rootPath: string
@@ -55,6 +79,7 @@ export type HostToWeb =
 export type WebToHost =
   | { type: 'ready' }
   | { type: 'select'; assetId: string }
+  | { type: 'selectSlot'; assetId: string; slotIndex: number | undefined }
   | { type: 'clearSlot'; assetId: string; slotIndex: number }
   | { type: 'setColor'; assetId: string; slotIndex: number; rgba: Rgba }
   | {
@@ -69,6 +94,18 @@ export type WebToHost =
   | {
       type: 'setProperty'
       assetId: string
+      key: string
+      value: boolean | string
+    }
+  | {
+      type: 'setGrid'
+      assetId: string
+      grid: ImageGridView
+    }
+  | {
+      type: 'setSlotProperty'
+      assetId: string
+      slotIndex: number
       key: string
       value: boolean | string
     }

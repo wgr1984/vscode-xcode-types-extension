@@ -32,4 +32,21 @@ describe('properties', () => {
     }
     expect(next.properties['template-rendering-intent']).toBe('template')
   })
+
+  it('parses ODR tags from comma string', () => {
+    const next = setContentsProperty({ images: [] }, 'on-demand-resource-tags', 'a, b') as {
+      properties: { 'on-demand-resource-tags': string[] }
+    }
+    expect(next.properties['on-demand-resource-tags']).toEqual(['a', 'b'])
+  })
+
+  it('exposes compression field', () => {
+    const fields = propertyFieldsFor('imageset', {
+      images: [],
+      properties: { 'compression-type': 'lossless' },
+    })
+    const c = fields.find((f) => f.key === 'compression-type')
+    expect(c?.type).toBe('select')
+    if (c?.type === 'select') expect(c.value).toBe('lossless')
+  })
 })

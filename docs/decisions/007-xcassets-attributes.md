@@ -1,6 +1,6 @@
 # 007 — xcassets attributes (set vs slot)
 
-**Status:** research done — implementation slice not chosen  
+**Status:** accepted — all three slices shipped  
 **Date:** 2026-09-27  
 **Phase:** 10
 
@@ -12,4 +12,7 @@
 
 **Do not** write AssetLib template keys (`devices`, `memory-set`, …) into catalog JSON.
 
-**See:** [research/xcassets-attributes.md](../research/xcassets-attributes.md)
+**Impl:** `properties.ts` + `grid.ts` + `slotAttrs.ts`; UI panels in `XcassetsApp`.  
+**Deferred:** alignment insets / 9-slice; appicon device size matrices.
+
+**See:** [research/xcassets-attributes.md](../research/xcassets-attributes.md), [plan](../superpowers/plans/2026-09-27-xcassets-attributes.md)

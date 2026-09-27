@@ -14,6 +14,22 @@ export type PropertyField =
       value: string
       options: { value: string; label: string }[]
     }
+  | {
+      key: string
+      label: string
+      type: 'string'
+      value: string
+      placeholder?: string
+    }
+
+const COMPRESSION_OPTIONS = [
+  { value: '', label: 'Inherited (Automatic)' },
+  { value: 'automatic', label: 'Automatic' },
+  { value: 'lossless', label: 'Lossless' },
+  { value: 'lossy', label: 'Lossy' },
+  { value: 'gpu-optimized-best', label: 'GPU Optimized Best' },
+  { value: 'gpu-optimized-smallest', label: 'GPU Optimized Smallest' },
+]
 
 function propsObj(contents: unknown): Record<string, unknown> {
   if (!contents || typeof contents !== 'object') return {}
@@ -21,6 +37,12 @@ function propsObj(contents: unknown): Record<string, unknown> {
   const p = root.properties
   if (!p || typeof p !== 'object') return {}
   return p as Record<string, unknown>
+}
+
+function tagsString(p: Record<string, unknown>): string {
+  const t = p['on-demand-resource-tags']
+  if (!Array.isArray(t)) return ''
+  return t.map(String).join(', ')
 }
 
 /** Fields shown for a kind — values from Contents.json `properties`. */
@@ -34,13 +56,17 @@ export function propertyFieldsFor(
       typeof p['template-rendering-intent'] === 'string'
         ? String(p['template-rendering-intent'])
         : ''
+    const compression =
+      typeof p['compression-type'] === 'string'
+        ? String(p['compression-type'])
+        : ''
+    const autoScaling =
+      typeof p['auto-scaling'] === 'string'
+        ? String(p['auto-scaling'])
+        : p['auto-scaling'] === true
+          ? 'auto'
+          : ''
     return [
-      {
-        key: 'preserves-vector-representation',
-        label: 'Preserve vector data',
-        type: 'boolean',
-        value: p['preserves-vector-representation'] === true,
-      },
       {
         key: 'template-rendering-intent',
         label: 'Render as',
@@ -52,6 +78,42 @@ export function propertyFieldsFor(
           { value: 'template', label: 'Template' },
         ],
       },
+      {
+        key: 'compression-type',
+        label: 'Compression',
+        type: 'select',
+        value: compression,
+        options: COMPRESSION_OPTIONS,
+      },
+      {
+        key: 'preserves-vector-representation',
+        label: 'Preserve vector data',
+        type: 'boolean',
+        value: p['preserves-vector-representation'] === true,
+      },
+      {
+        key: 'localizable',
+        label: 'Localizable',
+        type: 'boolean',
+        value: p.localizable === true,
+      },
+      {
+        key: 'auto-scaling',
+        label: 'Auto scaling',
+        type: 'select',
+        value: autoScaling,
+        options: [
+          { value: '', label: 'Off' },
+          { value: 'auto', label: 'Auto' },
+        ],
+      },
+      {
+        key: 'on-demand-resource-tags',
+        label: 'ODR tags',
+        type: 'string',
+        value: tagsString(p),
+        placeholder: 'tag1, tag2',
+      },
     ]
   }
   if (kind === 'appiconset') {
@@ -61,6 +123,13 @@ export function propertyFieldsFor(
         label: 'Pre-rendered',
         type: 'boolean',
         value: p['pre-rendered'] === true,
+      },
+      {
+        key: 'on-demand-resource-tags',
+        label: 'ODR tags',
+        type: 'string',
+        value: tagsString(p),
+        placeholder: 'tag1, tag2',
       },
     ]
   }
@@ -72,12 +141,19 @@ export function propertyFieldsFor(
         type: 'boolean',
         value: p['provides-namespace'] === true,
       },
+      {
+        key: 'on-demand-resource-tags',
+        label: 'ODR tags',
+        type: 'string',
+        value: tagsString(p),
+        placeholder: 'tag1, tag2',
+      },
     ]
   }
   return []
 }
 
-/** Set or clear a property. Empty string for select clears the key. */
+/** Set or clear a property. Empty string for select/string clears the key. */
 export function setContentsProperty(
   contents: unknown,
   key: string,
@@ -92,7 +168,14 @@ export function setContentsProperty(
       ? root.properties
       : {}) as Record<string, unknown>),
   }
-  if (typeof value === 'boolean') {
+  if (key === 'on-demand-resource-tags') {
+    const tags = String(value)
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    if (tags.length === 0) delete props[key]
+    else props[key] = tags
+  } else if (typeof value === 'boolean') {
     if (value) props[key] = true
     else delete props[key]
   } else if (value === '') {

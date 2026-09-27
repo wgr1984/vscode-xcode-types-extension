@@ -81,6 +81,9 @@ export class XcassetsEditorProvider implements vscode.CustomEditorProvider<Xcass
         } else if (msg.type === 'select') {
           document.select(msg.assetId)
           push('update')
+        } else if (msg.type === 'selectSlot') {
+          document.selectSlot(msg.assetId, msg.slotIndex)
+          push('update')
         } else if (msg.type === 'clearSlot') {
           document.clearSlot(msg.assetId, msg.slotIndex)
           push('update')
@@ -89,6 +92,17 @@ export class XcassetsEditorProvider implements vscode.CustomEditorProvider<Xcass
           push('update')
         } else if (msg.type === 'setProperty') {
           document.setProperty(msg.assetId, msg.key, msg.value)
+          push('update')
+        } else if (msg.type === 'setGrid') {
+          document.setGrid(msg.assetId, msg.grid)
+          push('update')
+        } else if (msg.type === 'setSlotProperty') {
+          document.setSlotProperty(
+            msg.assetId,
+            msg.slotIndex,
+            msg.key,
+            msg.value,
+          )
           push('update')
         } else if (msg.type === 'drop') {
           const bytes = new Uint8Array(Buffer.from(msg.bytesBase64, 'base64'))

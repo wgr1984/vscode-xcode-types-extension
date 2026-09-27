@@ -2,6 +2,7 @@ import { useEffect, useState, type DragEvent } from 'react'
 import { hexToRgba, rgbaCss, rgbaToHex } from './colorRgba'
 import type {
   HostToWeb,
+  ImageGridView,
   PropertyFieldView,
   Rgba,
   SlotView,
@@ -22,6 +23,29 @@ const FALLBACK_RGBA: Rgba = {
   alpha: '1.000',
 }
 
+const DEVICE_OPTIONS = [
+  { id: 'universal', label: 'Universal' },
+  { id: 'iphone', label: 'iPhone' },
+  { id: 'ipad', label: 'iPad' },
+  { id: 'mac-catalyst', label: 'Mac Catalyst' },
+  { id: 'car', label: 'CarPlay' },
+  { id: 'mac', label: 'Mac' },
+  { id: 'vision', label: 'Apple Vision' },
+  { id: 'watch', label: 'Apple Watch' },
+  { id: 'tv', label: 'Apple TV' },
+] as const
+
+const MEMORY_OPTIONS = ['1GB', '2GB', '3GB', '4GB']
+const GRAPHICS_OPTIONS = [
+  'metal1v2',
+  'metal1v3',
+  'metal2v2',
+  'metal2v3',
+  'metal3v1',
+  'metal3v2',
+  'metal4v1',
+]
+
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -39,6 +63,85 @@ function fileToBase64(file: File): Promise<string> {
   })
 }
 
+function StringField({
+  field,
+  onCommit,
+}: {
+  field: Extract<PropertyFieldView, { type: 'string' }>
+  onCommit: (value: string) => void
+}) {
+  const [draft, setDraft] = useState(field.value)
+  useEffect(() => {
+    setDraft(field.value)
+  }, [field.key, field.value])
+  return (
+    <label className="flex items-center gap-2 text-xs min-w-0">
+      <span className="shrink-0 w-28 opacity-80">{field.label}</span>
+      <input
+        className="min-w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+        value={draft}
+        placeholder={field.placeholder}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          if (draft !== field.value) onCommit(draft)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            if (draft !== field.value) onCommit(draft)
+          }
+        }}
+      />
+    </label>
+  )
+}
+
+function FieldControls({
+  fields,
+  onChange,
+}: {
+  fields: PropertyFieldView[]
+  onChange: (key: string, value: boolean | string) => void
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      {fields.map((f) =>
+        f.type === 'boolean' ? (
+          <label key={f.key} className="flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={f.value}
+              onChange={(e) => onChange(f.key, e.target.checked)}
+            />
+            <span>{f.label}</span>
+          </label>
+        ) : f.type === 'string' ? (
+          <StringField
+            key={f.key}
+            field={f}
+            onCommit={(value) => onChange(f.key, value)}
+          />
+        ) : (
+          <label key={f.key} className="flex items-center gap-2 text-xs min-w-0">
+            <span className="shrink-0 w-28 opacity-80">{f.label}</span>
+            <select
+              className="min-w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+              value={f.value}
+              onChange={(e) => onChange(f.key, e.target.value)}
+            >
+              {f.options.map((o) => (
+                <option key={o.value || 'default'} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ),
+      )}
+    </div>
+  )
+}
+
 function PropertiesPanel({
   assetId,
   fields,
@@ -47,50 +150,205 @@ function PropertiesPanel({
   fields: PropertyFieldView[]
 }) {
   return (
-    <section className="mb-4 p-3 border border-[var(--vscode-panel-border,#555)] rounded-sm max-w-md">
+    <section className="mb-4 p-3 border border-[var(--vscode-panel-border,#555)] rounded-sm max-w-lg">
       <h3 className="text-xs font-medium opacity-80 mb-2">Properties</h3>
-      <div className="flex flex-col gap-2">
-        {fields.map((f) =>
-          f.type === 'boolean' ? (
-            <label key={f.key} className="flex items-center gap-2 text-xs">
+      <FieldControls
+        fields={fields}
+        onChange={(key, value) =>
+          vscode.postMessage({ type: 'setProperty', assetId, key, value })
+        }
+      />
+    </section>
+  )
+}
+
+function SlotPropertiesPanel({
+  assetId,
+  slotIndex,
+  fields,
+}: {
+  assetId: string
+  slotIndex: number
+  fields: PropertyFieldView[]
+}) {
+  return (
+    <section className="mb-4 p-3 border border-[var(--vscode-focusBorder,#007fd4)] rounded-sm max-w-lg">
+      <h3 className="text-xs font-medium opacity-80 mb-2">
+        Image slot #{slotIndex}
+      </h3>
+      <FieldControls
+        fields={fields}
+        onChange={(key, value) =>
+          vscode.postMessage({
+            type: 'setSlotProperty',
+            assetId,
+            slotIndex,
+            key,
+            value,
+          })
+        }
+      />
+    </section>
+  )
+}
+
+function toggleList(list: string[], id: string, on: boolean): string[] {
+  if (on) return list.includes(id) ? list : [...list, id]
+  return list.filter((x) => x !== id)
+}
+
+function GridPanel({
+  assetId,
+  grid,
+}: {
+  assetId: string
+  grid: ImageGridView
+}) {
+  const push = (next: ImageGridView) =>
+    vscode.postMessage({ type: 'setGrid', assetId, grid: next })
+
+  return (
+    <section className="mb-4 p-3 border border-[var(--vscode-panel-border,#555)] rounded-sm max-w-lg space-y-3">
+      <h3 className="text-xs font-medium opacity-80">Devices & variants</h3>
+      <div>
+        <div className="text-[10px] uppercase opacity-60 mb-1">Devices</div>
+        <div className="flex flex-col gap-1">
+          {DEVICE_OPTIONS.map((d) => (
+            <label key={d.id} className="flex items-center gap-2 text-xs">
               <input
                 type="checkbox"
-                checked={f.value}
+                checked={grid.devices.includes(d.id)}
                 onChange={(e) =>
-                  vscode.postMessage({
-                    type: 'setProperty',
-                    assetId,
-                    key: f.key,
-                    value: e.target.checked,
+                  push({
+                    ...grid,
+                    devices: toggleList(grid.devices, d.id, e.target.checked),
                   })
                 }
               />
-              <span>{f.label}</span>
+              {d.label}
             </label>
-          ) : (
-            <label key={f.key} className="flex items-center gap-2 text-xs min-w-0">
-              <span className="shrink-0 w-24 opacity-80">{f.label}</span>
-              <select
-                className="min-w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
-                value={f.value}
+          ))}
+        </div>
+      </div>
+      <label className="flex items-center gap-2 text-xs min-w-0">
+        <span className="w-28 shrink-0 opacity-80">Appearances</span>
+        <select
+          className="min-w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+          value={grid.appearances}
+          onChange={(e) =>
+            push({
+              ...grid,
+              appearances: e.target.value as ImageGridView['appearances'],
+            })
+          }
+        >
+          <option value="any">None</option>
+          <option value="any-dark">Any, Dark</option>
+          <option value="light-dark">Any, Light and Dark</option>
+        </select>
+      </label>
+      <label className="flex items-center gap-2 text-xs">
+        <input
+          type="checkbox"
+          checked={grid.highContrast}
+          onChange={(e) => push({ ...grid, highContrast: e.target.checked })}
+        />
+        High Contrast
+      </label>
+      <label className="flex items-center gap-2 text-xs">
+        <input
+          type="checkbox"
+          checked={grid.individualScales}
+          onChange={(e) =>
+            push({ ...grid, individualScales: e.target.checked })
+          }
+        />
+        Individual Scales
+      </label>
+      <label className="flex items-center gap-2 text-xs min-w-0">
+        <span className="w-28 shrink-0 opacity-80">Gamut</span>
+        <select
+          className="min-w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+          value={grid.gamut}
+          onChange={(e) =>
+            push({ ...grid, gamut: e.target.value as ImageGridView['gamut'] })
+          }
+        >
+          <option value="any">Any</option>
+          <option value="both">sRGB and Display P3</option>
+        </select>
+      </label>
+      <label className="flex items-center gap-2 text-xs min-w-0">
+        <span className="w-28 shrink-0 opacity-80">Direction</span>
+        <select
+          className="min-w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+          value={grid.direction}
+          onChange={(e) =>
+            push({
+              ...grid,
+              direction: e.target.value as ImageGridView['direction'],
+            })
+          }
+        >
+          <option value="fixed">Fixed</option>
+          <option value="both">Left and Right</option>
+        </select>
+      </label>
+      <label className="flex items-center gap-2 text-xs">
+        <input
+          type="checkbox"
+          checked={grid.widthClass}
+          onChange={(e) => push({ ...grid, widthClass: e.target.checked })}
+        />
+        Width Class (compact / regular)
+      </label>
+      <label className="flex items-center gap-2 text-xs">
+        <input
+          type="checkbox"
+          checked={grid.heightClass}
+          onChange={(e) => push({ ...grid, heightClass: e.target.checked })}
+        />
+        Height Class (compact / regular)
+      </label>
+      <div>
+        <div className="text-[10px] uppercase opacity-60 mb-1">Memory</div>
+        <div className="flex flex-wrap gap-2">
+          {MEMORY_OPTIONS.map((m) => (
+            <label key={m} className="flex items-center gap-1 text-xs">
+              <input
+                type="checkbox"
+                checked={grid.memory.includes(m)}
                 onChange={(e) =>
-                  vscode.postMessage({
-                    type: 'setProperty',
-                    assetId,
-                    key: f.key,
-                    value: e.target.value,
+                  push({
+                    ...grid,
+                    memory: toggleList(grid.memory, m, e.target.checked),
                   })
                 }
-              >
-                {f.options.map((o) => (
-                  <option key={o.value || 'default'} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+              />
+              {m}
             </label>
-          ),
-        )}
+          ))}
+        </div>
+      </div>
+      <div>
+        <div className="text-[10px] uppercase opacity-60 mb-1">Graphics</div>
+        <div className="flex flex-wrap gap-2">
+          {GRAPHICS_OPTIONS.map((g) => (
+            <label key={g} className="flex items-center gap-1 text-xs">
+              <input
+                type="checkbox"
+                checked={grid.graphics.includes(g)}
+                onChange={(e) =>
+                  push({
+                    ...grid,
+                    graphics: toggleList(grid.graphics, g, e.target.checked),
+                  })
+                }
+              />
+              {g}
+            </label>
+          ))}
+        </div>
       </div>
     </section>
   )
@@ -192,10 +450,12 @@ function Well({
   assetId,
   slot,
   kind,
+  selected,
 }: {
   assetId: string
   slot: SlotView
   kind: string
+  selected?: boolean
 }) {
   const onDrop = async (e: DragEvent) => {
     e.preventDefault()
@@ -217,7 +477,30 @@ function Well({
 
   return (
     <div
-      className="border border-dashed border-[var(--vscode-panel-border,#555)] p-2 w-36 min-h-[8rem] flex flex-col"
+      role="button"
+      tabIndex={0}
+      className={`border border-dashed p-2 w-36 min-h-[8rem] flex flex-col cursor-pointer ${
+        selected
+          ? 'border-[var(--vscode-focusBorder,#007fd4)]'
+          : 'border-[var(--vscode-panel-border,#555)]'
+      }`}
+      onClick={() =>
+        vscode.postMessage({
+          type: 'selectSlot',
+          assetId,
+          slotIndex: slot.index,
+        })
+      }
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          vscode.postMessage({
+            type: 'selectSlot',
+            assetId,
+            slotIndex: slot.index,
+          })
+        }
+      }}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => void onDrop(e)}
     >
@@ -240,13 +523,14 @@ function Well({
         <button
           type="button"
           className="text-xs mt-1 underline opacity-80"
-          onClick={() =>
+          onClick={(e) => {
+            e.stopPropagation()
             vscode.postMessage({
               type: 'clearSlot',
               assetId,
               slotIndex: slot.index,
             })
-          }
+          }}
         >
           Clear
         </button>
@@ -387,6 +671,17 @@ export function XcassetsApp() {
             {detail.properties && detail.properties.length > 0 && (
               <PropertiesPanel assetId={detail.id} fields={detail.properties} />
             )}
+            {detail.grid && (
+              <GridPanel assetId={detail.id} grid={detail.grid} />
+            )}
+            {detail.slotProperties &&
+              detail.selectedSlotIndex !== undefined && (
+                <SlotPropertiesPanel
+                  assetId={detail.id}
+                  slotIndex={detail.selectedSlotIndex}
+                  fields={detail.slotProperties}
+                />
+              )}
             <div className="flex flex-wrap gap-3">
               {detail.slots.map((slot) => (
                 <Well
@@ -394,11 +689,17 @@ export function XcassetsApp() {
                   assetId={detail.id}
                   slot={slot}
                   kind={detail.kind}
+                  selected={detail.selectedSlotIndex === slot.index}
                 />
               ))}
             </div>
             {detail.slots.length === 0 && (
               <p className="opacity-70">No slots in Contents.json</p>
+            )}
+            {detail.kind === 'imageset' && (
+              <p className="text-[10px] opacity-50 mt-3">
+                Click a well to edit that slot. Grid toggles reshape all wells.
+              </p>
             )}
           </>
         )}
