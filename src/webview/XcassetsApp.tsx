@@ -75,12 +75,14 @@ function ColorWell({
   }
 
   return (
-    <div className="border border-[var(--vscode-panel-border,#555)] p-2 w-48">
-      <div className="text-xs opacity-70 mb-2">{slot.label}</div>
-      <div className="flex gap-2 items-center mb-2">
+    <div className="border border-[var(--vscode-panel-border,#555)] p-2 w-44 box-border overflow-hidden">
+      <div className="text-xs opacity-70 mb-2 truncate" title={slot.label}>
+        {slot.label}
+      </div>
+      <div className="flex gap-2 items-center mb-2 min-w-0">
         <input
           type="color"
-          className="h-10 w-12 cursor-pointer bg-transparent border-0 p-0"
+          className="h-9 w-9 shrink-0 cursor-pointer bg-transparent border-0 p-0"
           value={rgbaToHex(rgba)}
           onChange={(e) => {
             const parsed = hexToRgba(e.target.value, rgba.alpha)
@@ -89,14 +91,14 @@ function ColorWell({
           title="Pick color"
         />
         <div
-          className="h-10 flex-1 rounded-sm border border-black/30"
+          className="h-9 min-w-0 flex-1 rounded-sm border border-black/30"
           style={{ background: rgbaCss(rgba) }}
         />
       </div>
-      <label className="flex gap-1 text-xs mb-1 items-center">
-        <span className="w-10 shrink-0">hex</span>
+      <label className="flex gap-1 text-xs mb-1 items-center min-w-0">
+        <span className="w-8 shrink-0">hex</span>
         <input
-          className="flex-1 font-mono bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+          className="min-w-0 w-0 flex-1 font-mono bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1 box-border"
           value={hexDraft}
           spellCheck={false}
           onChange={(e) => setHexDraft(e.target.value)}
@@ -109,10 +111,10 @@ function ColorWell({
           }}
         />
       </label>
-      <label className="flex gap-1 text-xs items-center">
-        <span className="w-10 shrink-0">alpha</span>
+      <label className="flex gap-1 text-xs items-center min-w-0">
+        <span className="w-8 shrink-0">alpha</span>
         <input
-          className="flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+          className="min-w-0 w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1 box-border"
           value={rgba.alpha}
           onChange={(e) => setRgba({ ...rgba, alpha: e.target.value })}
           onBlur={() => {

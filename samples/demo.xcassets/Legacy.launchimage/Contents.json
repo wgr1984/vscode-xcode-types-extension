@@ -2,10 +2,14 @@
   "images" : [
     {
       "extent" : "full-screen",
+      "filename" : "Launch-Portrait@2x.png",
       "idiom" : "iphone",
       "orientation" : "portrait",
       "scale" : "2x"
     }
   ],
-  "info" : { "author" : "xcode", "version" : 1 }
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
 }
