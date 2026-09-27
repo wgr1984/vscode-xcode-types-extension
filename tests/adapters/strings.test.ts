@@ -20,4 +20,11 @@ describe('stringsAdapter', () => {
     const model = stringsAdapter.parse(`"unterminated`)
     expect(model.banner?.level).toBe('error')
   })
+
+  it('flags garbage even when some pairs parse', () => {
+    const model = stringsAdapter.parse(`"a" = "b";\nasdas = asdfsa\n`)
+    expect(model.banner?.level).toBe('error')
+    expect(model.rows).toHaveLength(1)
+    expect(model.rows[0].cells).toEqual({ key: 'a', value: 'b' })
+  })
 })

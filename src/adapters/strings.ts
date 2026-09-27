@@ -38,11 +38,18 @@ export const stringsAdapter: FormatAdapter = {
       .replace(re, '')
       .replace(/\s+/g, '')
 
-    if (stripped.length > 0 && rows.length === 0) {
+    // leftover non-whitespace after valid pairs = syntax error (do not ignore)
+    if (stripped.length > 0) {
       return {
         columns,
-        rows: [],
-        banner: { level: 'error', text: 'Failed to parse .strings' },
+        rows,
+        banner: {
+          level: 'error',
+          text:
+            rows.length === 0
+              ? 'Failed to parse .strings'
+              : 'Failed to parse .strings (invalid syntax)',
+        },
       }
     }
 
