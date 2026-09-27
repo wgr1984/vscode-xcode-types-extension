@@ -80,51 +80,29 @@ function StringField({
   return (
     <label className="flex items-center gap-2 text-xs min-w-0">
       <span className="shrink-0 w-28 opacity-80">{field.label}</span>
-      <div className="min-w-0 flex-1 flex gap-1">
-        <input
-          className="min-w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
-          value={draft}
-          placeholder={field.placeholder}
-          list={suggestions.length > 0 ? listId : undefined}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={() => {
+      <input
+        className="min-w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+        value={draft}
+        placeholder={field.placeholder}
+        list={suggestions.length > 0 ? listId : undefined}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          if (draft !== field.value) onCommit(draft)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
             if (draft !== field.value) onCommit(draft)
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              if (draft !== field.value) onCommit(draft)
-            }
-          }}
-        />
-        {suggestions.length > 0 && (
-          <>
-            <datalist id={listId}>
-              {suggestions.map((s) => (
-                <option key={s} value={s} />
-              ))}
-            </datalist>
-            <select
-              className="max-w-[40%] shrink-0 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
-              value={suggestions.includes(draft) ? draft : ''}
-              title="Pick file from folder"
-              onChange={(e) => {
-                const v = e.target.value
-                if (!v) return
-                setDraft(v)
-                onCommit(v)
-              }}
-            >
-              <option value="">File…</option>
-              {suggestions.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </>
-        )}
-      </div>
+          }
+        }}
+      />
+      {suggestions.length > 0 && (
+        <datalist id={listId}>
+          {suggestions.map((s) => (
+            <option key={s} value={s} />
+          ))}
+        </datalist>
+      )}
     </label>
   )
 }
