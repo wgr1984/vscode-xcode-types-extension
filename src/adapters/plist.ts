@@ -1,4 +1,23 @@
-import type { FormatAdapter, Row, TableModel } from './types'
+import type { FormatAdapter, ParseIssue, Row, TableModel } from './types'
+
+function issueAt(text: string, offset: number, message: string): ParseIssue {
+  let line = 0
+  let col = 0
+  const pos = Math.min(Math.max(offset, 0), text.length)
+  for (let i = 0; i < pos; i++) {
+    if (text[i] === '\n') {
+      line++
+      col = 0
+    } else {
+      col++
+    }
+  }
+  let lineStart = pos
+  while (lineStart > 0 && text[lineStart - 1] !== '\n') lineStart--
+  const nl = text.indexOf('\n', pos)
+  const lineLen = (nl < 0 ? text.length : nl) - lineStart
+  return { message, line, startCol: col, endCol: Math.max(col + 1, lineLen) }
+}
 
 const PLIST_TYPES = [
   'string',
@@ -66,10 +85,13 @@ function parseText(s: string, i: number): { text: string; i: number } {
   return { text, i }
 }
 
-function parseValue(s: string, i: number): { value: PlistValue; i: number } | null {
+type ValueOk = { value: PlistValue; i: number }
+type ValueFail = { fail: number }
+
+function parseValue(s: string, i: number): ValueOk | ValueFail {
   i = skipWs(s, i)
   const tag = parseTag(s, i)
-  if (!tag) return null
+  if (!tag) return { fail: i }
   i = tag.i
 
   if (tag.name === 'true' || tag.name === 'false') {
@@ -94,15 +116,15 @@ function parseValue(s: string, i: number): { value: PlistValue; i: number } | nu
         break
       }
       const keyTag = parseTag(s, i)
-      if (!keyTag || keyTag.name !== 'key') return null
+      if (!keyTag || keyTag.name !== 'key') return { fail: i }
       i = keyTag.i
       const keyText = parseText(s, i)
       i = keyText.i
       const keyClose = parseClose(s, i, 'key')
-      if (keyClose == null) return null
+      if (keyClose == null) return { fail: i }
       i = keyClose
       const child = parseValue(s, i)
-      if (!child) return null
+      if ('fail' in child) return child
       i = child.i
       entries.push({ key: keyText.text, value: child.value })
     }
@@ -118,7 +140,7 @@ function parseValue(s: string, i: number): { value: PlistValue; i: number } | nu
         break
       }
       const child = parseValue(s, i)
-      if (!child) return null
+      if ('fail' in child) return child
       i = child.i
       items.push(child.value)
     }
@@ -128,7 +150,7 @@ function parseValue(s: string, i: number): { value: PlistValue; i: number } | nu
   const text = parseText(s, i)
   i = text.i
   const close = parseClose(s, i, tag.name)
-  if (close == null) return null
+  if (close == null) return { fail: i }
   return {
     value: {
       type: tag.name as 'string' | 'integer' | 'real' | 'data' | 'date',
@@ -426,25 +448,44 @@ export const plistAdapter: FormatAdapter = {
           level: 'error',
           text: 'Binary plist not supported. Convert to XML (e.g. plutil -convert xml1) then reopen.',
         },
+        issues: [issueAt(text, 0, 'Binary plist not supported')],
       }
     }
 
     const plistStart = text.indexOf('<plist')
     if (plistStart === -1) {
+      const msg = 'Failed to parse .plist (no <plist>)'
       return {
         columns,
         rows: [],
-        banner: { level: 'error', text: 'Failed to parse .plist (no <plist>)' },
+        banner: { level: 'error', text: msg },
+        issues: [issueAt(text, 0, msg)],
       }
     }
 
     let i = text.indexOf('>', plistStart) + 1
     const root = parseValue(text, i)
-    if (!root) {
+    if ('fail' in root) {
+      const msg = 'Failed to parse .plist XML'
       return {
         columns,
         rows: [],
-        banner: { level: 'error', text: 'Failed to parse .plist XML' },
+        banner: { level: 'error', text: msg },
+        issues: [issueAt(text, root.fail, msg)],
+      }
+    }
+
+    // leftover junk before </plist> (e.g. "sdfdsf" after root dict)
+    let j = skipWs(text, root.i)
+    if (text.slice(j, j + 8) !== '</plist>') {
+      const msg = 'Unexpected content in .plist'
+      const rows: Row[] = []
+      flatten(root.value, '', rows, { n: 0 })
+      return {
+        columns,
+        rows: sortRows(rows),
+        banner: { level: 'error', text: msg },
+        issues: [issueAt(text, j, msg)],
       }
     }
 

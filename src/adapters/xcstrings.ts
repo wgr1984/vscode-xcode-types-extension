@@ -1,4 +1,4 @@
-import type { FormatAdapter, Row, TableModel } from './types'
+import type { FormatAdapter, ParseIssue, Row, TableModel } from './types'
 
 const columns = [
   { key: 'key', label: 'Key' },
@@ -22,6 +22,35 @@ type Catalog = {
   version?: string
 }
 
+function jsonParseIssue(text: string, err: unknown): ParseIssue {
+  const message = 'Failed to parse .xcstrings JSON'
+  const msg = err instanceof Error ? err.message : ''
+  const lc = /line\s+(\d+)\s+column\s+(\d+)/i.exec(msg)
+  if (lc) {
+    const line = Math.max(0, Number(lc[1]) - 1)
+    const startCol = Math.max(0, Number(lc[2]) - 1)
+    const lineText = text.split(/\n/)[line] ?? ''
+    return { message, line, startCol, endCol: Math.max(startCol + 1, lineText.length) }
+  }
+  const pos = /position\s+(\d+)/i.exec(msg)
+  if (pos) {
+    let line = 0
+    let col = 0
+    const offset = Math.min(Number(pos[1]), text.length)
+    for (let i = 0; i < offset; i++) {
+      if (text[i] === '\n') {
+        line++
+        col = 0
+      } else {
+        col++
+      }
+    }
+    const lineText = text.split(/\n/)[line] ?? ''
+    return { message, line, startCol: col, endCol: Math.max(col + 1, lineText.length) }
+  }
+  return { message, line: 0, startCol: 0, endCol: Math.min(1, text.length) || 1 }
+}
+
 // ponytail: minimal xcstrings rebuild
 export const xcstringsAdapter: FormatAdapter = {
   languageId: 'xcstrings',
@@ -30,11 +59,12 @@ export const xcstringsAdapter: FormatAdapter = {
     let data: Catalog
     try {
       data = JSON.parse(text) as Catalog
-    } catch {
+    } catch (err) {
       return {
         columns,
         rows: [],
         banner: { level: 'error', text: 'Failed to parse .xcstrings JSON' },
+        issues: [jsonParseIssue(text, err)],
       }
     }
 

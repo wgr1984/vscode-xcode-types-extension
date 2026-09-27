@@ -39,6 +39,25 @@ describe('xcstringsAdapter', () => {
   it('invalid JSON sets banner', () => {
     const model = xcstringsAdapter.parse('{')
     expect(model.banner?.level).toBe('error')
+    expect(model.issues?.[0].line).toBe(0)
+  })
+
+  it('flags junk line in JSON', () => {
+    const text = `{
+  "sourceLanguage": "en",
+  "strings": {
+    "hello": {
+sdfdsf
+      "localizations": {}
+    }
+  }
+}
+`
+    const model = xcstringsAdapter.parse(text)
+    expect(model.banner?.level).toBe('error')
+    expect(model.issues).toEqual([
+      expect.objectContaining({ line: 4 }),
+    ])
   })
 
   it('round-trips empty-key draft row', () => {

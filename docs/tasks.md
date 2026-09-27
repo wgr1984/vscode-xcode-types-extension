@@ -91,3 +91,5 @@ Spec: [raw-edit-mode-design](./superpowers/specs/2026-09-27-raw-edit-mode-design
 | T8.2 | RawEditor (textarea + Prism mirror) | done | |
 | T8.3 | Host write + validate path | done | always write |
 | T8.4 | Manual F5 smoke | todo | you: toggle, break XML, fix, table |
+| T8.5 | Plist XML parse issues (underline) | done | trailing junk + fail offset |
+| T8.6 | xcstrings JSON parse issues | done | SyntaxError line/col |

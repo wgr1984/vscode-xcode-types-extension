@@ -42,6 +42,40 @@ describe('plistAdapter', () => {
   it('invalid XML sets banner', () => {
     const model = plistAdapter.parse('<not-a-plist>')
     expect(model.banner?.level).toBe('error')
+    expect(model.issues?.[0].line).toBe(0)
+  })
+
+  it('flags junk after root before </plist>', () => {
+    const text = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>name</key>
+  <string>Demo</string>
+</dict>
+sdfdsf
+</plist>
+`
+    const model = plistAdapter.parse(text)
+    expect(model.banner?.level).toBe('error')
+    expect(model.rows.some((r) => r.cells.path === 'name')).toBe(true)
+    expect(model.issues).toEqual([
+      expect.objectContaining({ line: 7, message: 'Unexpected content in .plist' }),
+    ])
+  })
+
+  it('flags bad tag inside dict at that line', () => {
+    const text = `<plist version="1.0">
+<dict>
+  <key>a</key>
+  <string>ok</string>
+  nope
+</dict>
+</plist>
+`
+    const model = plistAdapter.parse(text)
+    expect(model.banner?.level).toBe('error')
+    expect(model.issues?.[0].line).toBe(4)
   })
 
   const nested = `<?xml version="1.0" encoding="UTF-8"?>
