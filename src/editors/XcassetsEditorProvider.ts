@@ -29,18 +29,23 @@ export class XcassetsEditorProvider implements vscode.CustomEditorProvider<Xcass
     _openContext: vscode.CustomDocumentOpenContext,
     _token: vscode.CancellationToken,
   ): Promise<XcassetsDocument> {
-    const doc = await XcassetsDocument.create(uri)
-    const sub = doc.onDidChange(() => {
-      if (doc.isDirty) {
-        this._onDidChangeCustomDocument.fire({
-          document: doc,
-          undo: () => {},
-          redo: () => {},
-        })
-      }
-    })
-    doc.onDidDispose(() => sub.dispose())
-    return doc
+    try {
+      const doc = await XcassetsDocument.create(uri)
+      const sub = doc.onDidChange(() => {
+        if (doc.isDirty) {
+          this._onDidChangeCustomDocument.fire({
+            document: doc,
+            undo: () => {},
+            redo: () => {},
+          })
+        }
+      })
+      doc.onDidDispose(() => sub.dispose())
+      return doc
+    } catch (e) {
+      console.error('xcassets openCustomDocument failed', uri.toString(), e)
+      throw e
+    }
   }
 
   async resolveCustomEditor(
@@ -52,7 +57,7 @@ export class XcassetsEditorProvider implements vscode.CustomEditorProvider<Xcass
       enableScripts: true,
       localResourceRoots: [
         vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview'),
-        document.uri,
+        document.catalogRoot,
       ],
     }
     webviewPanel.webview.html = getXcassetsWebviewHtml(
@@ -191,22 +196,13 @@ export function registerOpenXcassetsCommand(): vscode.Disposable {
         void vscode.window.showErrorMessage('Select a .xcassets folder')
         return
       }
-      // Prefer opening root Contents.json so default custom editor association applies.
+      // Always open root Contents.json — document.uri must stay that file resource.
       const contents = vscode.Uri.joinPath(catalog, 'Contents.json')
-      try {
-        await vscode.workspace.fs.stat(contents)
-        await vscode.commands.executeCommand(
-          'vscode.openWith',
-          contents,
-          XcassetsEditorProvider.viewType,
-        )
-      } catch {
-        await vscode.commands.executeCommand(
-          'vscode.openWith',
-          catalog,
-          XcassetsEditorProvider.viewType,
-        )
-      }
+      await vscode.commands.executeCommand(
+        'vscode.openWith',
+        contents,
+        XcassetsEditorProvider.viewType,
+      )
     },
   )
 }

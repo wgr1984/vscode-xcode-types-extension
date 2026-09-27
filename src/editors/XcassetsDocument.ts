@@ -71,22 +71,31 @@ export class XcassetsDocument implements vscode.CustomDocument {
   private watcher?: vscode.FileSystemWatcher
 
   private constructor(
+    /** MUST equal the resource VS Code opened (usually `…/*.xcassets/Contents.json`). */
     readonly uri: vscode.Uri,
-    private readonly catalogRoot: vscode.Uri,
+    readonly catalogRoot: vscode.Uri,
   ) {}
 
-  static async create(uri: vscode.Uri): Promise<XcassetsDocument> {
-    let catalogRoot = uri
-    if (uri.path.endsWith('/Contents.json') || uri.path.endsWith('Contents.json')) {
-      const parent = vscode.Uri.joinPath(uri, '..')
-      if (parent.path.endsWith('.xcassets')) catalogRoot = parent
-      else {
-        const grand = vscode.Uri.joinPath(parent, '..')
-        if (grand.path.endsWith('.xcassets')) catalogRoot = grand
-        else catalogRoot = parent
-      }
+  static resolveCatalogRoot(uri: vscode.Uri): vscode.Uri {
+    let cur = uri
+    for (let i = 0; i < 12; i++) {
+      const name = cur.path.split('/').pop() ?? ''
+      if (name.endsWith('.xcassets')) return cur
+      const parent = vscode.Uri.joinPath(cur, '..')
+      if (parent.path === cur.path) break
+      cur = parent
     }
-    const doc = new XcassetsDocument(catalogRoot, catalogRoot)
+    // Fallback: Contents.json parent
+    if (uri.path.endsWith('Contents.json')) {
+      return vscode.Uri.joinPath(uri, '..')
+    }
+    return uri
+  }
+
+  static async create(uri: vscode.Uri): Promise<XcassetsDocument> {
+    const catalogRoot = XcassetsDocument.resolveCatalogRoot(uri)
+    // document.uri must match the opened resource exactly — do not rewrite to folder.
+    const doc = new XcassetsDocument(uri, catalogRoot)
     await doc.load()
     doc.watch()
     return doc
