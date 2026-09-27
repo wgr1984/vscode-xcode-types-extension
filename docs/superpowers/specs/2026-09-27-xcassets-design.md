@@ -22,7 +22,8 @@ Xcode-like Asset Catalog editor for `.xcassets` folders: left asset list, center
 
 **Editable kinds:** `.imageset`, `.appiconset`, `.colorset`, `.dataset`, `.launchimage`, groups (no `.` in name).  
 **Stub kinds:** `.symbolset`, `.brandassets`, stickers, textures/mipmaps, AR, complications, Game Center, `.iconset`, etc. — list + “unsupported” detail.  
-**Out of v1:** Attributes inspector (template-rendering, ODR tags, vector preserve), fancy undo stack, byte-perfect Xcode JSON, workspace-wide diagnostics.
+**Out of v1:** Full Attributes inspector parity (ODR tags, memory classes, …). Basic set properties (preserve vector, render as, …) shipped.  
+**Out of v1:** fancy undo stack, byte-perfect Xcode JSON, workspace-wide diagnostics.
 
 ## Architecture
 

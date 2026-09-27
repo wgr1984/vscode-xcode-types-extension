@@ -2,6 +2,7 @@ import { useEffect, useState, type DragEvent } from 'react'
 import { hexToRgba, rgbaCss, rgbaToHex } from './colorRgba'
 import type {
   HostToWeb,
+  PropertyFieldView,
   Rgba,
   SlotView,
   WebToHost,
@@ -36,6 +37,63 @@ function fileToBase64(file: File): Promise<string> {
     reader.onerror = () => reject(reader.error ?? new Error('read failed'))
     reader.readAsDataURL(file)
   })
+}
+
+function PropertiesPanel({
+  assetId,
+  fields,
+}: {
+  assetId: string
+  fields: PropertyFieldView[]
+}) {
+  return (
+    <section className="mb-4 p-3 border border-[var(--vscode-panel-border,#555)] rounded-sm max-w-md">
+      <h3 className="text-xs font-medium opacity-80 mb-2">Properties</h3>
+      <div className="flex flex-col gap-2">
+        {fields.map((f) =>
+          f.type === 'boolean' ? (
+            <label key={f.key} className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={f.value}
+                onChange={(e) =>
+                  vscode.postMessage({
+                    type: 'setProperty',
+                    assetId,
+                    key: f.key,
+                    value: e.target.checked,
+                  })
+                }
+              />
+              <span>{f.label}</span>
+            </label>
+          ) : (
+            <label key={f.key} className="flex items-center gap-2 text-xs min-w-0">
+              <span className="shrink-0 w-24 opacity-80">{f.label}</span>
+              <select
+                className="min-w-0 flex-1 bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+                value={f.value}
+                onChange={(e) =>
+                  vscode.postMessage({
+                    type: 'setProperty',
+                    assetId,
+                    key: f.key,
+                    value: e.target.value,
+                  })
+                }
+              >
+                {f.options.map((o) => (
+                  <option key={o.value || 'default'} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ),
+        )}
+      </div>
+    </section>
+  )
 }
 
 function ColorWell({
@@ -313,7 +371,12 @@ export function XcassetsApp() {
       <main className="flex-1 p-4 overflow-auto">
         {!model.selectionId && <p className="opacity-70">Select asset</p>}
         {detail?.kind === 'group' && (
-          <p className="opacity-70">Group — select a child asset.</p>
+          <>
+            <p className="opacity-70 mb-3">Group — select a child asset.</p>
+            {detail.properties && detail.properties.length > 0 && (
+              <PropertiesPanel assetId={detail.id} fields={detail.properties} />
+            )}
+          </>
         )}
         {detail?.unsupported && (
           <p className="opacity-70">Unsupported subtype (read-only stub).</p>
@@ -321,6 +384,9 @@ export function XcassetsApp() {
         {detail && !detail.unsupported && detail.kind !== 'group' && (
           <>
             <h2 className="text-base mb-3 font-medium">{detail.kind}</h2>
+            {detail.properties && detail.properties.length > 0 && (
+              <PropertiesPanel assetId={detail.id} fields={detail.properties} />
+            )}
             <div className="flex flex-wrap gap-3">
               {detail.slots.map((slot) => (
                 <Well

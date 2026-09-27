@@ -87,6 +87,9 @@ export class XcassetsEditorProvider implements vscode.CustomEditorProvider<Xcass
         } else if (msg.type === 'setColor') {
           document.setColor(msg.assetId, msg.slotIndex, msg.rgba)
           push('update')
+        } else if (msg.type === 'setProperty') {
+          document.setProperty(msg.assetId, msg.key, msg.value)
+          push('update')
         } else if (msg.type === 'drop') {
           const bytes = new Uint8Array(Buffer.from(msg.bytesBase64, 'base64'))
           document.applyDrop(msg.assetId, msg.slotIndex, msg.fileName, bytes)

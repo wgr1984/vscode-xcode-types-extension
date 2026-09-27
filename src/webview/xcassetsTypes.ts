@@ -23,7 +23,23 @@ export type AssetDetail = {
   kind: string
   slots: SlotView[]
   unsupported?: boolean
+  properties?: PropertyFieldView[]
 }
+
+export type PropertyFieldView =
+  | {
+      key: string
+      label: string
+      type: 'boolean'
+      value: boolean
+    }
+  | {
+      key: string
+      label: string
+      type: 'select'
+      value: string
+      options: { value: string; label: string }[]
+    }
 
 export type XcassetsViewModel = {
   rootPath: string
@@ -50,3 +66,9 @@ export type WebToHost =
     }
   | { type: 'addAsset'; parentId: string; kind: string; name: string }
   | { type: 'deleteAsset'; assetId: string }
+  | {
+      type: 'setProperty'
+      assetId: string
+      key: string
+      value: boolean | string
+    }

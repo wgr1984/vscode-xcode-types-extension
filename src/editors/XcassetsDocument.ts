@@ -14,6 +14,10 @@ import {
   type SlotInfo,
 } from '../xcassets/model'
 import {
+  propertyFieldsFor,
+  setContentsProperty,
+} from '../xcassets/properties'
+import {
   defaultContentsJson,
   folderNameFor,
 } from '../xcassets/templates'
@@ -171,19 +175,32 @@ export class XcassetsDocument implements vscode.CustomDocument {
     if (this.selectionId) {
       const node = findNode(this.tree, this.selectionId)
       if (node) {
-        if (node.kind === 'exotic' || node.kind === 'group' || node.kind === 'catalog') {
+        if (node.kind === 'exotic' || node.kind === 'catalog') {
           detail = {
             id: node.id,
             kind: node.kind,
             slots: [],
             unsupported: node.kind === 'exotic',
           }
+        } else if (node.kind === 'group') {
+          const contents = this.effectiveContents(node) ?? { info: { version: 1 } }
+          detail = {
+            id: node.id,
+            kind: node.kind,
+            slots: [],
+            properties: propertyFieldsFor(node.kind, contents),
+          }
         } else {
           const contents = this.effectiveContents(node)
           const slots = slotsFromContents(node.kind, contents).map((s) =>
             this.slotToView(node, s, webview),
           )
-          detail = { id: node.id, kind: node.kind, slots }
+          detail = {
+            id: node.id,
+            kind: node.kind,
+            slots,
+            properties: propertyFieldsFor(node.kind, contents),
+          }
         }
       }
     }
@@ -261,6 +278,18 @@ export class XcassetsDocument implements vscode.CustomDocument {
     this.mutateContents(assetId, (c) =>
       setColorComponents(c, slotIndex, rgba),
     )
+  }
+
+  setProperty(assetId: string, key: string, value: boolean | string): void {
+    const node = findNode(this.tree, assetId)
+    if (!node) throw new Error(`Unknown asset ${assetId}`)
+    const base = this.effectiveContents(node) ?? {
+      info: { author: 'xcode', version: 1 },
+    }
+    const next = setContentsProperty(base, key, value)
+    this.stagedContents.set(assetId, next)
+    node.contents = next
+    this.markDirty()
   }
 
   applyDrop(
