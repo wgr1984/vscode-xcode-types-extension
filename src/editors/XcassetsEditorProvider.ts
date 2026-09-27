@@ -113,8 +113,27 @@ export class XcassetsEditorProvider implements vscode.CustomEditorProvider<Xcass
           document.applyDrop(msg.assetId, msg.slotIndex, msg.fileName, bytes)
           push('update')
         } else if (msg.type === 'addAsset') {
-          document.addAsset(msg.parentId, msg.kind, msg.name)
+          let name = msg.name?.trim()
+          if (!name) {
+            name = await vscode.window.showInputBox({
+              title: `New ${msg.kind}`,
+              prompt: 'Asset name (no extension)',
+              value: 'NewAsset',
+              validateInput: (v) =>
+                !v.trim()
+                  ? 'Name required'
+                  : /[/\\.]/.test(v.trim())
+                    ? 'No dots or slashes'
+                    : undefined,
+            })
+            if (!name) return
+          }
+          document.addAsset(msg.parentId, msg.kind, name.trim())
           push('update')
+          const folder = document.uriForAsset(document.selectionId ?? '')
+          if (folder) {
+            await vscode.commands.executeCommand('revealInExplorer', folder)
+          }
         } else if (msg.type === 'deleteAsset') {
           document.deleteAsset(msg.assetId)
           push('update')

@@ -13,7 +13,8 @@
           "appearance": "luminosity",
           "value": "dark"
         }
-      ]
+      ],
+      "filename": "Badge-dark.svg"
     },
     {
       "idiom": "universal",

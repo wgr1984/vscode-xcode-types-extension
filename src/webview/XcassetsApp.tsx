@@ -565,6 +565,7 @@ function Well({
 
 export function XcassetsApp() {
   const [model, setModel] = useState<XcassetsViewModel | null>(null)
+  const [addKind, setAddKind] = useState('imageset')
 
   useEffect(() => {
     const onMsg = (e: MessageEvent<HostToWeb>) => {
@@ -599,9 +600,9 @@ export function XcassetsApp() {
         )}
         <div className="flex gap-1 p-2 border-b border-[var(--vscode-panel-border,#444)]">
           <select
-            id="add-kind"
             className="flex-1 text-xs bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)]"
-            defaultValue="imageset"
+            value={addKind}
+            onChange={(e) => setAddKind(e.target.value)}
           >
             <option value="imageset">imageset</option>
             <option value="appiconset">appiconset</option>
@@ -613,13 +614,8 @@ export function XcassetsApp() {
           <button
             type="button"
             className="px-2 text-xs border border-[var(--vscode-button-border,#555)]"
+            title="Add asset (name via VS Code input)"
             onClick={() => {
-              const sel = document.getElementById(
-                'add-kind',
-              ) as HTMLSelectElement | null
-              const kind = sel?.value ?? 'imageset'
-              const name = window.prompt('Asset name (no extension)', 'NewAsset')
-              if (!name) return
               const parent =
                 model.assets.find((a) => a.id === model.selectionId)?.kind ===
                 'group'
@@ -628,8 +624,7 @@ export function XcassetsApp() {
               vscode.postMessage({
                 type: 'addAsset',
                 parentId: parent,
-                kind,
-                name,
+                kind: addKind,
               })
             }}
           >

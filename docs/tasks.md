@@ -124,3 +124,4 @@ Spec: (pending) `superpowers/specs/2026-09-27-xcassets-design.md`
 | T10.13 | Attributes v2 — per-slot panel | done | click well → slot attrs |
 | T10.14 | Colorset grid + slot (appearances/gamut/space) | done | |
 | T10.15 | Reveal selected asset folder in Explorer | done | `revealInExplorer` on nav select |
+| T10.16 | Fix add asset (`window.prompt` broken in webview) | done | host `showInputBox` |

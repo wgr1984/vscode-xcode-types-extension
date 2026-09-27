@@ -90,7 +90,7 @@ export type WebToHost =
       fileName: string
       bytesBase64: string
     }
-  | { type: 'addAsset'; parentId: string; kind: string; name: string }
+  | { type: 'addAsset'; parentId: string; kind: string; name?: string }
   | { type: 'deleteAsset'; assetId: string }
   | {
       type: 'setProperty'
