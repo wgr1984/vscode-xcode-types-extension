@@ -97,7 +97,7 @@
     ]
   },
   "scripts": {
-    "build": "vite build -c vite.extension.ts && vite build -c vite.webview.ts",
+    "build": "vite build -c vite.extension.ts && vite build -c vite.webview.ts && vite build -c vite.xcassets.ts",
     "watch": "vite build -c vite.extension.ts --watch",
     "test": "vitest run",
     "package": "npm run build && vsce package --no-dependencies"
