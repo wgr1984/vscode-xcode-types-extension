@@ -81,6 +81,10 @@ export class XcassetsEditorProvider implements vscode.CustomEditorProvider<Xcass
         } else if (msg.type === 'select') {
           document.select(msg.assetId)
           push('update')
+          const folder = document.uriForAsset(msg.assetId)
+          if (folder) {
+            await vscode.commands.executeCommand('revealInExplorer', folder)
+          }
         } else if (msg.type === 'selectSlot') {
           document.selectSlot(msg.assetId, msg.slotIndex)
           push('update')

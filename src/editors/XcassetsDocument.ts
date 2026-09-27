@@ -285,6 +285,16 @@ export class XcassetsDocument implements vscode.CustomDocument {
     this.selectedSlotIndex = slotIndex
   }
 
+  /** Folder URI for an asset (or Contents.json for catalog root). */
+  uriForAsset(assetId: string): vscode.Uri | undefined {
+    const node = findNode(this.tree, assetId)
+    if (!node) return undefined
+    if (!node.relativePath || node.relativePath === '.') {
+      return this.catalogRoot
+    }
+    return joinUri(this.catalogRoot, node.relativePath)
+  }
+
   private mutateContents(
     assetId: string,
     mutator: (contents: unknown) => unknown,
