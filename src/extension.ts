@@ -5,6 +5,10 @@ import { stringsAdapter } from './adapters/strings'
 import { xcconfigAdapter } from './adapters/xcconfig'
 import { xcstringsAdapter } from './adapters/xcstrings'
 import { TableEditorProvider } from './editors/TableEditorProvider'
+import {
+  registerOpenXcassetsCommand,
+  XcassetsEditorProvider,
+} from './editors/XcassetsEditorProvider'
 
 export function activate(context: vscode.ExtensionContext): void {
   registerAdapter(stringsAdapter)
@@ -13,6 +17,8 @@ export function activate(context: vscode.ExtensionContext): void {
   registerAdapter(xcstringsAdapter)
   context.subscriptions.push(
     TableEditorProvider.register(context, 'xcodeTypes.table'),
+    XcassetsEditorProvider.register(context),
+    registerOpenXcassetsCommand(),
   )
 }
 

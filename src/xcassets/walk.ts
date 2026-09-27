@@ -88,31 +88,3 @@ export async function walkCatalogUri(
 ): Promise<CatalogNode> {
   return walkNode(rootAbsPath, '', rootName, 'catalog', fs)
 }
-
-/** Node fs adapter for vitest against samples/. */
-export async function walkCatalogFromPaths(
-  rootFsPath: string,
-  io: {
-    readDir: (
-      p: string,
-    ) => Promise<Array<{ name: string; isDirectory: () => boolean }>>
-    readText: (p: string) => Promise<string>
-  },
-): Promise<CatalogNode> {
-  const pathMod = await import('node:path')
-  const name = pathMod.basename(rootFsPath)
-  const fs: WalkFs = {
-    async readDirectory(uriPath) {
-      const ents = await io.readDir(uriPath)
-      return ents.map((e) => [
-        e.name,
-        e.isDirectory() ? 'dir' : 'file',
-      ])
-    },
-    async readFile(uriPath) {
-      const text = await io.readText(uriPath)
-      return new TextEncoder().encode(text)
-    },
-  }
-  return walkCatalogUri(rootFsPath, name, fs)
-}

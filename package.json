@@ -1,7 +1,7 @@
 {
   "name": "xcode-types",
   "displayName": "Xcode Types",
-  "description": "Table editors and highlighting for plist, strings, xcstrings, xcconfig",
+  "description": "Table editors and highlighting for plist, strings, xcstrings, xcconfig, plus Asset Catalog viewer",
   "version": "0.0.1",
   "publisher": "local",
   "engines": {
@@ -71,8 +71,33 @@
           }
         ],
         "priority": "default"
+      },
+      {
+        "viewType": "xcodeTypes.xcassets",
+        "displayName": "Asset Catalog",
+        "selector": [
+          {
+            "filenamePattern": "*.xcassets/Contents.json"
+          }
+        ],
+        "priority": "option"
       }
     ],
+    "commands": [
+      {
+        "command": "xcodeTypes.openXcassets",
+        "title": "Xcode Types: Open Asset Catalog"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "xcodeTypes.openXcassets",
+          "when": "resourceFilename =~ /\\.xcassets$/",
+          "group": "navigation"
+        }
+      ]
+    },
     "grammars": [
       {
         "language": "plist",
