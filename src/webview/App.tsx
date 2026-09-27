@@ -51,7 +51,7 @@ export function App() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col">
       <div className="flex shrink-0 gap-2 px-3 py-2 border-b border-[var(--vscode-panel-border)]">
         <button
           type="button"
@@ -80,7 +80,7 @@ export function App() {
         </div>
       )}
       <div
-        className={`min-h-0 flex-1 ${mode === 'table' ? 'overflow-auto' : ''}`}
+        className={`min-h-0 min-w-0 w-full flex-1 ${mode === 'table' ? 'overflow-auto' : ''}`}
       >
         {mode === 'table' ? (
           <Table

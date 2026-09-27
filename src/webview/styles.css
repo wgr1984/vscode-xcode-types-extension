@@ -6,6 +6,7 @@ html,
 body,
 #root {
   height: 100%;
+  width: 100%;
   margin: 0;
   padding: 0;
 }
@@ -63,6 +64,10 @@ body {
 }
 
 /* raw editor: full-width wrap; shared metrics so pre/textarea stay aligned */
+.raw-editor {
+  width: 100%;
+  min-width: 0;
+}
 .raw-editor__stack {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -76,12 +81,14 @@ body {
   border: 0;
   width: 100%;
   min-width: 0;
+  max-width: 100%;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.875rem;
   line-height: 1.25rem;
   white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  /* break only when line would overflow — not early mid-word shrink */
+  overflow-wrap: break-word;
+  word-break: normal;
   tab-size: 4;
 }
 .raw-editor__pre {
