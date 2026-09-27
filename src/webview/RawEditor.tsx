@@ -117,7 +117,7 @@ export function RawEditor({ text, languageId, onChange }: Props) {
     'absolute inset-0 m-0 p-3 box-border w-full h-full overflow-auto font-mono text-sm leading-5 whitespace-pre-wrap break-words'
 
   return (
-    <div className="relative h-[calc(100vh-6rem)] min-h-[12rem] bg-[var(--vscode-editor-background)]">
+    <div className="relative h-full min-h-0 bg-[var(--vscode-editor-background)]">
       <pre
         ref={preRef}
         aria-hidden

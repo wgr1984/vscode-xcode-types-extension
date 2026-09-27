@@ -2,13 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
+html,
+body,
+#root {
+  height: 100%;
   margin: 0;
   padding: 0;
+}
+
+body {
   font-family: var(--vscode-font-family);
   font-size: var(--vscode-font-size);
   color: var(--vscode-foreground);
   background: var(--vscode-editor-background);
+  overflow: hidden;
 }
 
 /* Prism tokens — map to editor theme colors */

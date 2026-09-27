@@ -51,8 +51,8 @@ export function App() {
   }
 
   return (
-    <div>
-      <div className="flex gap-2 px-3 py-2 border-b border-[var(--vscode-panel-border)]">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 gap-2 px-3 py-2 border-b border-[var(--vscode-panel-border)]">
         <button
           type="button"
           className={`px-2 py-0.5 ${mode === 'table' ? 'font-semibold underline' : 'opacity-70'}`}
@@ -70,7 +70,7 @@ export function App() {
       </div>
       {model.banner && (
         <div
-          className={`px-3 py-2 ${
+          className={`shrink-0 px-3 py-2 ${
             model.banner.level === 'error'
               ? 'bg-[var(--vscode-inputValidation-errorBackground)] text-[var(--vscode-errorForeground)]'
               : 'bg-[var(--vscode-inputValidation-infoBackground)]'
@@ -79,21 +79,25 @@ export function App() {
           {model.banner.text}
         </div>
       )}
-      {mode === 'table' ? (
-        <Table
-          columns={model.columns}
-          rows={model.rows}
-          disabled={disabled}
-          onChange={onChange}
-          onEditingChange={(v) => {
-            editingRef.current = v
-            // own writes skip doc→webview; reparse once focus leaves table
-            if (!v) vscodeApi.postMessage({ type: 'refresh' })
-          }}
-        />
-      ) : (
-        <RawEditor text={text} languageId={languageId} onChange={onRawChange} />
-      )}
+      <div
+        className={`min-h-0 flex-1 ${mode === 'table' ? 'overflow-auto' : ''}`}
+      >
+        {mode === 'table' ? (
+          <Table
+            columns={model.columns}
+            rows={model.rows}
+            disabled={disabled}
+            onChange={onChange}
+            onEditingChange={(v) => {
+              editingRef.current = v
+              // own writes skip doc→webview; reparse once focus leaves table
+              if (!v) vscodeApi.postMessage({ type: 'refresh' })
+            }}
+          />
+        ) : (
+          <RawEditor text={text} languageId={languageId} onChange={onRawChange} />
+        )}
+      </div>
     </div>
   )
 }
