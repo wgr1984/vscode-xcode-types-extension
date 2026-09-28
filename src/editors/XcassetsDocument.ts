@@ -28,7 +28,8 @@ import {
 } from '../xcassets/grid'
 import {
   COMMON_LOCALES,
-  localeDisplayName,
+  localesFromXcstringsText,
+  toLocaleOptions,
 } from '../xcassets/locales'
 import {
   propertyFieldsFor,
@@ -189,25 +190,59 @@ export class XcassetsDocument implements vscode.CustomDocument {
     const folderFiles = this.selectionId
       ? await this.listAssetFiles(this.selectionId)
       : []
-    const availableLocales = await this.listAvailableLocales()
-    return this.buildViewModel(webview, folderFiles, availableLocales)
+    const { locales, fromProject } = await this.listAvailableLocales()
+    return this.buildViewModel(webview, folderFiles, locales, fromProject)
   }
 
-  /** Project `*.lproj` names + common locales + ones already on the asset. */
-  async listAvailableLocales(): Promise<{ id: string; label: string }[]> {
-    const byId = new Map<string, string>()
-    for (const l of COMMON_LOCALES) byId.set(l.id, l.label)
+  /**
+   * Locales for Localization UI.
+   * Prefer project languages from `*.xcstrings` + `*.lproj`.
+   * If any are found, restrict the picker to those (plus locales already on the asset).
+   * Otherwise fall back to a common list.
+   */
+  async listAvailableLocales(): Promise<{
+    locales: { id: string; label: string }[]
+    fromProject: boolean
+  }> {
+    const project = new Set<string>()
     try {
-      const found = await vscode.workspace.findFiles('**/*.lproj/**', null, 200)
+      const catalogs = await vscode.workspace.findFiles(
+        '**/*.xcstrings',
+        '**/node_modules/**',
+        40,
+      )
+      for (const uri of catalogs) {
+        try {
+          const bytes = await vscode.workspace.fs.readFile(uri)
+          for (const id of localesFromXcstringsText(
+            new TextDecoder('utf-8').decode(bytes),
+          )) {
+            project.add(id)
+          }
+        } catch {
+          // skip unreadable catalog
+        }
+      }
+    } catch {
+      // ignore findFiles failures
+    }
+    try {
+      const found = await vscode.workspace.findFiles(
+        '**/*.lproj/**',
+        '**/node_modules/**',
+        200,
+      )
       for (const uri of found) {
         const lproj = uri.path.split('/').find((p) => p.endsWith('.lproj'))
         if (!lproj) continue
         const id = lproj.replace(/\.lproj$/i, '')
-        if (id && !byId.has(id)) byId.set(id, localeDisplayName(id))
+        if (id) project.add(id)
       }
     } catch {
       // ignore
     }
+
+    const assetLocales = new Set<string>()
     if (this.selectionId) {
       const node = findNode(this.tree, this.selectionId)
       const contents = node ? this.effectiveContents(node) : undefined
@@ -215,13 +250,17 @@ export class XcassetsDocument implements vscode.CustomDocument {
         node?.kind === 'colorset'
           ? inferColorGrid(contents)
           : inferImageGrid(contents)
-      for (const id of g.locales ?? []) {
-        if (!byId.has(id)) byId.set(id, localeDisplayName(id))
-      }
+      for (const id of g.locales ?? []) assetLocales.add(id)
     }
-    return [...byId.entries()]
-      .map(([id, label]) => ({ id, label }))
-      .sort((a, b) => a.label.localeCompare(b.label))
+
+    if (project.size > 0) {
+      for (const id of assetLocales) project.add(id)
+      return { locales: toLocaleOptions(project), fromProject: true }
+    }
+
+    const fallback = new Set(COMMON_LOCALES.map((l) => l.id))
+    for (const id of assetLocales) fallback.add(id)
+    return { locales: toLocaleOptions(fallback), fromProject: false }
   }
 
   /** Files in the asset folder (excl. Contents.json), plus staged drops. */
@@ -262,6 +301,7 @@ export class XcassetsDocument implements vscode.CustomDocument {
     availableLocales: { id: string; label: string }[] = COMMON_LOCALES.map(
       (l) => ({ id: l.id, label: l.label }),
     ),
+    localesFromProject = false,
   ): XcassetsViewModel {
     const assets = flattenAssets(this.tree).map((a) => ({
       id: a.id,
@@ -348,6 +388,7 @@ export class XcassetsDocument implements vscode.CustomDocument {
             selectedSlotIndex: slotIdx,
             slotProperties,
             availableLocales,
+            localesFromProject,
             folderFiles,
           }
         }

@@ -63,10 +63,17 @@ Example (Universal + German, dark @2x):
 
 | Xcode | Our editor |
 |-------|------------|
-| Localization language checkboxes | Checkbox list of project/common locales + Add… |
+| Localization language checkboxes | Checkbox list from project locales |
+| Project language list | `*.xcstrings` (`sourceLanguage` + `localizations` keys) **and** `*.lproj`; if either present → **restrict** picker to those (+ locales already on the asset). Else common fallback. |
 | Universal / German / French sections | Group wells under locale headers |
-| Project language list | Scan workspace `*.lproj` + common defaults + locales already in JSON |
-| Boolean “Localizable” alone | Derived: `locales.length > 0` → set `localizable`; remove standalone confusing toggle from primary UI (keep sync) |
+| Boolean “Localizable” alone | Derived: `locales.length > 0` → set `localizable` |
+
+## Project locale discovery
+
+1. Scan workspace `**/*.xcstrings` → union of `sourceLanguage` and all `strings.*.localizations` keys.
+2. Scan `**/*.lproj/**` → folder basename without `.lproj`.
+3. If (1)+(2) non-empty → Localization UI shows **only** those ids (plus any already used on the current asset so edits stay visible).
+4. Else → common language list + free-form Add.
 
 ## Out of scope (v1)
 

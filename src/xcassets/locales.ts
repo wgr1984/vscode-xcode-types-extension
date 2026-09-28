@@ -1,4 +1,4 @@
-/** Common BCP-47-ish ids Xcode shows for asset localization. */
+/** Common BCP-47-ish ids — fallback when the workspace has no project locales. */
 export const COMMON_LOCALES: { id: string; label: string }[] = [
   { id: 'en', label: 'English' },
   { id: 'fr', label: 'French' },
@@ -40,4 +40,41 @@ export function localesFromContents(
     if (typeof loc === 'string' && loc) set.add(loc)
   }
   return [...set].sort()
+}
+
+/**
+ * Locales declared in a String Catalog (`.xcstrings`):
+ * `sourceLanguage` + every key under `strings.*.localizations`.
+ */
+export function localesFromXcstringsText(text: string): string[] {
+  let data: {
+    sourceLanguage?: string
+    strings?: Record<string, { localizations?: Record<string, unknown> }>
+  }
+  try {
+    data = JSON.parse(text) as typeof data
+  } catch {
+    return []
+  }
+  const set = new Set<string>()
+  if (typeof data.sourceLanguage === 'string' && data.sourceLanguage) {
+    set.add(data.sourceLanguage)
+  }
+  for (const entry of Object.values(data.strings ?? {})) {
+    const locs = entry?.localizations
+    if (!locs || typeof locs !== 'object') continue
+    for (const id of Object.keys(locs)) {
+      if (id) set.add(id)
+    }
+  }
+  return [...set].sort()
+}
+
+export function toLocaleOptions(
+  ids: Iterable<string>,
+): { id: string; label: string }[] {
+  return [...new Set(ids)]
+    .filter(Boolean)
+    .map((id) => ({ id, label: localeDisplayName(id) }))
+    .sort((a, b) => a.label.localeCompare(b.label))
 }

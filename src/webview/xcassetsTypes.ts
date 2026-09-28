@@ -79,8 +79,10 @@ export type AssetDetail = {
   selectedSlotIndex?: number
   slotProperties?: PropertyFieldView[]
   /** Non-Contents.json files in the selected asset folder */
-  /** Locales offered in Localization UI (project + common) */
+  /** Locales offered in Localization UI (project-restricted when known) */
   availableLocales?: { id: string; label: string }[]
+  /** True when list came from *.xcstrings / *.lproj (not common fallback) */
+  localesFromProject?: boolean
   folderFiles?: string[]
 }
 
