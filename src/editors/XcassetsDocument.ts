@@ -27,6 +27,10 @@ import {
   type ImageGridConfig,
 } from '../xcassets/grid'
 import {
+  COMMON_LOCALES,
+  localeDisplayName,
+} from '../xcassets/locales'
+import {
   propertyFieldsFor,
   setContentsProperty,
 } from '../xcassets/properties'
@@ -185,7 +189,39 @@ export class XcassetsDocument implements vscode.CustomDocument {
     const folderFiles = this.selectionId
       ? await this.listAssetFiles(this.selectionId)
       : []
-    return this.buildViewModel(webview, folderFiles)
+    const availableLocales = await this.listAvailableLocales()
+    return this.buildViewModel(webview, folderFiles, availableLocales)
+  }
+
+  /** Project `*.lproj` names + common locales + ones already on the asset. */
+  async listAvailableLocales(): Promise<{ id: string; label: string }[]> {
+    const byId = new Map<string, string>()
+    for (const l of COMMON_LOCALES) byId.set(l.id, l.label)
+    try {
+      const found = await vscode.workspace.findFiles('**/*.lproj/**', null, 200)
+      for (const uri of found) {
+        const lproj = uri.path.split('/').find((p) => p.endsWith('.lproj'))
+        if (!lproj) continue
+        const id = lproj.replace(/\.lproj$/i, '')
+        if (id && !byId.has(id)) byId.set(id, localeDisplayName(id))
+      }
+    } catch {
+      // ignore
+    }
+    if (this.selectionId) {
+      const node = findNode(this.tree, this.selectionId)
+      const contents = node ? this.effectiveContents(node) : undefined
+      const g =
+        node?.kind === 'colorset'
+          ? inferColorGrid(contents)
+          : inferImageGrid(contents)
+      for (const id of g.locales ?? []) {
+        if (!byId.has(id)) byId.set(id, localeDisplayName(id))
+      }
+    }
+    return [...byId.entries()]
+      .map(([id, label]) => ({ id, label }))
+      .sort((a, b) => a.label.localeCompare(b.label))
   }
 
   /** Files in the asset folder (excl. Contents.json), plus staged drops. */
@@ -223,6 +259,9 @@ export class XcassetsDocument implements vscode.CustomDocument {
   private buildViewModel(
     webview: vscode.Webview | undefined,
     folderFiles: string[],
+    availableLocales: { id: string; label: string }[] = COMMON_LOCALES.map(
+      (l) => ({ id: l.id, label: l.label }),
+    ),
   ): XcassetsViewModel {
     const assets = flattenAssets(this.tree).map((a) => ({
       id: a.id,
@@ -244,7 +283,8 @@ export class XcassetsDocument implements vscode.CustomDocument {
             unsupported: node.kind === 'exotic',
           }
         } else if (node.kind === 'group') {
-          const contents = this.effectiveContents(node) ?? { info: { version: 1 } }
+          const contents =
+            this.effectiveContents(node) ?? { info: { version: 1 } }
           detail = {
             id: node.id,
             kind: node.kind,
@@ -275,6 +315,8 @@ export class XcassetsDocument implements vscode.CustomDocument {
                 : f,
             )
           }
+          const colorGrid =
+            node.kind === 'colorset' ? inferColorGrid(contents) : undefined
           detail = {
             id: node.id,
             kind: node.kind,
@@ -283,15 +325,16 @@ export class XcassetsDocument implements vscode.CustomDocument {
             grid:
               node.kind === 'imageset'
                 ? inferImageGrid(contents)
-                : node.kind === 'colorset'
+                : colorGrid
                   ? {
-                      ...inferColorGrid(contents),
+                      ...colorGrid,
                       individualScales: false,
-                      direction: 'fixed',
+                      direction: 'fixed' as const,
                       widthClass: false,
                       heightClass: false,
                       memory: [],
                       graphics: [],
+                      locales: colorGrid.locales,
                     }
                   : undefined,
             gridKind:
@@ -304,6 +347,7 @@ export class XcassetsDocument implements vscode.CustomDocument {
                 : undefined,
             selectedSlotIndex: slotIdx,
             slotProperties,
+            availableLocales,
             folderFiles,
           }
         }
@@ -338,6 +382,7 @@ export class XcassetsDocument implements vscode.CustomDocument {
       label: slot.label,
       filename: slot.filename,
       previewUri,
+      locale: slot.locale,
       rgba: slot.rgba,
     }
   }
@@ -421,13 +466,14 @@ export class XcassetsDocument implements vscode.CustomDocument {
         applyImageGrid(c, grid as ImageGridConfig),
       )
     } else if (node.kind === 'colorset') {
-      const g = grid as ColorGridConfig
+      const g = grid as ColorGridConfig & ImageGridConfig
       this.mutateContents(assetId, (c) =>
         applyColorGrid(c, {
           devices: g.devices,
           appearances: g.appearances,
           highContrast: g.highContrast,
           gamut: g.gamut,
+          locales: g.locales ?? [],
         }),
       )
     } else {

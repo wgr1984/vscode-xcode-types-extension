@@ -5,6 +5,8 @@ export type SlotView = {
   label: string
   filename?: string
   previewUri?: string
+  /** Locale id when localized; omit = Universal / base */
+  locale?: string
   /** colorset only */
   rgba?: Rgba
 }
@@ -53,6 +55,7 @@ export type ImageGridView = {
   heightClass: boolean
   memory: string[]
   graphics: string[]
+  locales: string[]
 }
 
 export type AppIconGridView = {
@@ -76,6 +79,8 @@ export type AssetDetail = {
   selectedSlotIndex?: number
   slotProperties?: PropertyFieldView[]
   /** Non-Contents.json files in the selected asset folder */
+  /** Locales offered in Localization UI (project + common) */
+  availableLocales?: { id: string; label: string }[]
   folderFiles?: string[]
 }
 

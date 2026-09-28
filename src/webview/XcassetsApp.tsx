@@ -208,6 +208,30 @@ function toggleList(list: string[], id: string, on: boolean): string[] {
   return list.filter((x) => x !== id)
 }
 
+/** Group wells like Xcode: Universal, then each locale. */
+function groupSlotsByLocale(
+  slots: SlotView[],
+  availableLocales: { id: string; label: string }[],
+): { key: string; label: string; slots: SlotView[] }[] {
+  const labelOf = (id: string) =>
+    availableLocales.find((l) => l.id === id)?.label ?? id
+  const order: string[] = []
+  const map = new Map<string, SlotView[]>()
+  for (const s of slots) {
+    const key = s.locale ?? ''
+    if (!map.has(key)) {
+      map.set(key, [])
+      order.push(key)
+    }
+    map.get(key)!.push(s)
+  }
+  return order.map((key) => ({
+    key: key || 'universal',
+    label: key ? labelOf(key) : 'Universal',
+    slots: map.get(key)!,
+  }))
+}
+
 function AppIconGridPanel({
   assetId,
   grid,
@@ -308,14 +332,17 @@ function GridPanel({
   assetId,
   grid,
   mode,
+  availableLocales,
 }: {
   assetId: string
   grid: ImageGridView
   mode: 'imageset' | 'colorset'
+  availableLocales: { id: string; label: string }[]
 }) {
   const push = (next: ImageGridView) =>
     vscode.postMessage({ type: 'setGrid', assetId, grid: next })
   const imageOnly = mode === 'imageset'
+  const locales = grid.locales ?? []
 
   return (
     <section className="mb-4 p-3 border border-[var(--vscode-panel-border,#555)] rounded-sm max-w-lg space-y-3">
@@ -466,6 +493,68 @@ function GridPanel({
           </div>
         </>
       )}
+      <div>
+        <div className="text-[10px] uppercase opacity-60 mb-1">
+          Localization
+        </div>
+        <p className="text-[10px] opacity-50 mb-2">
+          Checked languages add well groups; Universal stays the fallback.
+        </p>
+        <div className="flex flex-col gap-1 max-h-40 overflow-auto">
+          {availableLocales.map((l) => (
+            <label key={l.id} className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={locales.includes(l.id)}
+                onChange={(e) =>
+                  push({
+                    ...grid,
+                    locales: toggleList(locales, l.id, e.target.checked),
+                  })
+                }
+              />
+              <span>
+                {l.label}{' '}
+                <span className="opacity-50">({l.id})</span>
+              </span>
+            </label>
+          ))}
+        </div>
+        <div className="flex gap-1 mt-2">
+          <input
+            className="min-w-0 flex-1 text-[10px] bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
+            placeholder="Add locale id…"
+            id={`add-locale-${assetId}`}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return
+              const el = e.target as HTMLInputElement
+              const next = el.value.trim()
+              if (!next) return
+              if (!locales.includes(next)) {
+                push({ ...grid, locales: [...locales, next] })
+              }
+              el.value = ''
+            }}
+          />
+          <button
+            type="button"
+            className="text-[10px] px-1 border border-[var(--vscode-button-border,#555)]"
+            onClick={() => {
+              const el = document.getElementById(
+                `add-locale-${assetId}`,
+              ) as HTMLInputElement | null
+              const next = el?.value.trim()
+              if (!next) return
+              if (!locales.includes(next)) {
+                push({ ...grid, locales: [...locales, next] })
+              }
+              if (el) el.value = ''
+            }}
+          >
+            Add
+          </button>
+        </div>
+      </div>
     </section>
   )
 }
@@ -808,6 +897,7 @@ export function XcassetsApp() {
                 assetId={detail.id}
                 grid={detail.grid}
                 mode={detail.gridKind}
+                availableLocales={detail.availableLocales ?? []}
               />
             )}
             {detail.slotProperties &&
@@ -818,17 +908,27 @@ export function XcassetsApp() {
                   fields={detail.slotProperties}
                 />
               )}
-            <div className="flex flex-wrap gap-3">
-              {detail.slots.map((slot) => (
-                <Well
-                  key={slot.index}
-                  assetId={detail.id}
-                  slot={slot}
-                  kind={detail.kind}
-                  selected={detail.selectedSlotIndex === slot.index}
-                />
-              ))}
-            </div>
+            {groupSlotsByLocale(
+              detail.slots,
+              detail.availableLocales ?? [],
+            ).map((group) => (
+              <div key={group.key} className="mb-4">
+                <h3 className="text-xs font-medium opacity-70 mb-2">
+                  {group.label}
+                </h3>
+                <div className="flex flex-wrap gap-3">
+                  {group.slots.map((slot) => (
+                    <Well
+                      key={slot.index}
+                      assetId={detail.id}
+                      slot={slot}
+                      kind={detail.kind}
+                      selected={detail.selectedSlotIndex === slot.index}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
             {detail.slots.length === 0 && (
               <p className="opacity-70">No slots in Contents.json</p>
             )}

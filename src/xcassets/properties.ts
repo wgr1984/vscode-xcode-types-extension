@@ -92,12 +92,6 @@ export function propertyFieldsFor(
         value: p['preserves-vector-representation'] === true,
       },
       {
-        key: 'localizable',
-        label: 'Localizable',
-        type: 'boolean',
-        value: p.localizable === true,
-      },
-      {
         key: 'auto-scaling',
         label: 'Auto scaling',
         type: 'select',

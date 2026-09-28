@@ -22,6 +22,8 @@ export type ImageGridConfig = {
   heightClass: boolean
   memory: string[]
   graphics: string[]
+  /** Checked Localization languages → `locale` on slot copies (base remains unlocalized). */
+  locales: string[]
 }
 
 export const DEVICE_OPTIONS: { id: DeviceId; label: string }[] = [
@@ -174,6 +176,7 @@ export function inferImageGrid(contents: unknown): ImageGridConfig {
     heightClass: false,
     memory: [],
     graphics: [],
+    locales: [],
   }
   if (!contents || typeof contents !== 'object') return empty
   const images = (contents as { images?: unknown }).images
@@ -193,6 +196,7 @@ export function inferImageGrid(contents: unknown): ImageGridConfig {
   let hasH = false
   const memory = new Set<string>()
   const graphics = new Set<string>()
+  const locales = new Set<string>()
 
   for (const s of slots) {
     const d = deviceOf(s)
@@ -206,6 +210,7 @@ export function inferImageGrid(contents: unknown): ImageGridConfig {
     if (typeof s['graphics-feature-set'] === 'string') {
       graphics.add(String(s['graphics-feature-set']))
     }
+    if (typeof s.locale === 'string' && s.locale) locales.add(s.locale)
     const apps = s.appearances
     if (Array.isArray(apps)) {
       for (const a of apps) {
@@ -234,6 +239,7 @@ export function inferImageGrid(contents: unknown): ImageGridConfig {
     heightClass: hasH,
     memory: [...memory].sort(),
     graphics: [...graphics].sort(),
+    locales: [...locales].sort(),
   }
 }
 
@@ -252,6 +258,10 @@ function buildSlots(config: ImageGridConfig): Slot[] {
     config.memory.length > 0 ? config.memory : [undefined]
   const gfxs: (string | undefined)[] =
     config.graphics.length > 0 ? config.graphics : [undefined]
+  const locales: (string | undefined)[] = [
+    undefined,
+    ...(config.locales ?? []),
+  ]
 
   const out: Slot[] = []
   for (const device of devices) {
@@ -266,16 +276,19 @@ function buildSlots(config: ImageGridConfig): Slot[] {
               for (const h of heights) {
                 for (const mem of mems) {
                   for (const gfx of gfxs) {
-                    const slot: Slot = { ...baseDeviceSlot(device) }
-                    if (scale) slot.scale = scale
-                    if (apps) slot.appearances = apps
-                    if (gamut) slot['display-gamut'] = gamut
-                    if (dir) slot['language-direction'] = dir
-                    if (w) slot['width-class'] = w
-                    if (h) slot['height-class'] = h
-                    if (mem) slot.memory = mem
-                    if (gfx) slot['graphics-feature-set'] = gfx
-                    out.push(slot)
+                    for (const locale of locales) {
+                      const slot: Slot = { ...baseDeviceSlot(device) }
+                      if (scale) slot.scale = scale
+                      if (apps) slot.appearances = apps
+                      if (gamut) slot['display-gamut'] = gamut
+                      if (dir) slot['language-direction'] = dir
+                      if (w) slot['width-class'] = w
+                      if (h) slot['height-class'] = h
+                      if (mem) slot.memory = mem
+                      if (gfx) slot['graphics-feature-set'] = gfx
+                      if (locale) slot.locale = locale
+                      out.push(slot)
+                    }
                   }
                 }
               }
@@ -308,15 +321,25 @@ export function applyImageGrid(
     return fn ? { ...s, filename: fn } : s
   })
   root.images = next
+  const props = {
+    ...((root.properties && typeof root.properties === 'object'
+      ? root.properties
+      : {}) as Record<string, unknown>),
+  }
+  if ((config.locales ?? []).length > 0) props.localizable = true
+  else delete props.localizable
+  if (Object.keys(props).length === 0) delete root.properties
+  else root.properties = props
   return root
 }
 
-/** Colorset grid: devices / appearances / gamut only (no scales). */
+/** Colorset grid: devices / appearances / gamut / locales. */
 export type ColorGridConfig = {
   devices: DeviceId[]
   appearances: 'any' | 'any-dark' | 'light-dark'
   highContrast: boolean
   gamut: 'any' | 'both'
+  locales: string[]
 }
 
 export function colorSlotIdentity(slot: Slot): string {
@@ -325,6 +348,7 @@ export function colorSlotIdentity(slot: Slot): string {
     `subtype=${slot.subtype ?? ''}`,
     `appearances=${appearancesKey(slot)}`,
     `gamut=${slot['display-gamut'] ?? ''}`,
+    `locale=${slot.locale ?? ''}`,
   ].join(';')
 }
 
@@ -344,6 +368,7 @@ export function inferColorGrid(contents: unknown): ColorGridConfig {
     appearances: 'any',
     highContrast: false,
     gamut: 'any',
+    locales: [],
   }
   if (!contents || typeof contents !== 'object') return empty
   const colors = (contents as { colors?: unknown }).colors
@@ -354,10 +379,12 @@ export function inferColorGrid(contents: unknown): ColorGridConfig {
   let hasLight = false
   let hasContrast = false
   let hasGamut = false
+  const locales = new Set<string>()
   for (const s of slots) {
     const d = deviceOf(s)
     if (d) devices.add(d)
     if (s['display-gamut']) hasGamut = true
+    if (typeof s.locale === 'string' && s.locale) locales.add(s.locale)
     const apps = s.appearances
     if (Array.isArray(apps)) {
       for (const a of apps) {
@@ -378,6 +405,7 @@ export function inferColorGrid(contents: unknown): ColorGridConfig {
     appearances,
     highContrast: hasContrast,
     gamut: hasGamut ? 'both' : 'any',
+    locales: [...locales].sort(),
   }
 }
 
@@ -386,14 +414,21 @@ function buildColorSlots(config: ColorGridConfig): Slot[] {
     config.devices.length > 0 ? config.devices : (['universal'] as DeviceId[])
   const appVars = appearanceVariants(config.appearances, config.highContrast)
   const gamuts = opts(config.gamut === 'both', ['sRGB', 'display-P3'])
+  const locales: (string | undefined)[] = [
+    undefined,
+    ...(config.locales ?? []),
+  ]
   const out: Slot[] = []
   for (const device of devices) {
     for (const apps of appVars) {
       for (const gamut of gamuts) {
-        const slot: Slot = { ...baseDeviceSlot(device) }
-        if (apps) slot.appearances = apps
-        if (gamut) slot['display-gamut'] = gamut
-        out.push(slot)
+        for (const locale of locales) {
+          const slot: Slot = { ...baseDeviceSlot(device) }
+          if (apps) slot.appearances = apps
+          if (gamut) slot['display-gamut'] = gamut
+          if (locale) slot.locale = locale
+          out.push(slot)
+        }
       }
     }
   }
@@ -419,5 +454,14 @@ export function applyColorGrid(
     const color = byId.get(colorSlotIdentity(s)) ?? clone(DEFAULT_COLOR)
     return { ...s, color }
   })
+  const props = {
+    ...((root.properties && typeof root.properties === 'object'
+      ? root.properties
+      : {}) as Record<string, unknown>),
+  }
+  if ((config.locales ?? []).length > 0) props.localizable = true
+  else delete props.localizable
+  if (Object.keys(props).length === 0) delete root.properties
+  else root.properties = props
   return root
 }

@@ -15,6 +15,7 @@ export type SlotInfo = {
   index: number
   label: string
   filename?: string
+  locale?: string
   rgba?: { red: string; green: string; blue: string; alpha: string }
 }
 
@@ -92,6 +93,7 @@ export function slotsFromContents(
       index,
       label: slotLabel(kind, slot),
       filename: typeof slot.filename === 'string' ? slot.filename : undefined,
+      locale: typeof slot.locale === 'string' ? slot.locale : undefined,
     }
     if (kind === 'colorset') {
       const color = slot.color as Record<string, unknown> | undefined

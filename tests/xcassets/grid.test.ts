@@ -19,6 +19,7 @@ const baseConfig = (): ImageGridConfig => ({
   heightClass: false,
   memory: [],
   graphics: [],
+  locales: [],
 })
 
 describe('grid', () => {
@@ -109,6 +110,7 @@ describe('grid', () => {
       appearances: 'any-dark',
       highContrast: false,
       gamut: 'any',
+      locales: [],
     }) as {
       colors: {
         appearances?: unknown
@@ -119,5 +121,21 @@ describe('grid', () => {
     const any = next.colors.find((c) => !c.appearances)
     expect(any?.color.components.red).toBe('0.1')
     expect(inferColorGrid(next).appearances).toBe('any-dark')
+  })
+
+  it('adds locale copies and sets localizable', () => {
+    const next = applyImageGrid(
+      { images: [] },
+      { ...baseConfig(), locales: ['de', 'fr'] },
+    ) as {
+      images: { locale?: string; scale: string }[]
+      properties?: { localizable?: boolean }
+    }
+    expect(next.properties?.localizable).toBe(true)
+    const de = next.images.filter((i) => i.locale === 'de')
+    const base = next.images.filter((i) => !i.locale)
+    expect(de).toHaveLength(3)
+    expect(base).toHaveLength(3)
+    expect(inferImageGrid(next).locales).toEqual(['de', 'fr'])
   })
 })
