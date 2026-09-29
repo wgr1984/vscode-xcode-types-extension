@@ -72,8 +72,7 @@ Example (Universal + German, dark @2x):
 
 1. Scan workspace `**/*.xcstrings` → union of `sourceLanguage` and all `strings.*.localizations` keys.
 2. Scan `**/*.lproj/**` → folder basename without `.lproj`.
-3. If (1)+(2) non-empty → Localization UI shows **only** those ids (plus any already used on the current asset so edits stay visible).
-4. Else → common language list + free-form Add.
+3. Localization UI shows **only** those ids (plus any already used on the current asset). **No common-language fallback.**
 
 ## Out of scope (v1)
 

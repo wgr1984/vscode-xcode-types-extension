@@ -333,13 +333,11 @@ function GridPanel({
   grid,
   mode,
   availableLocales,
-  localesFromProject,
 }: {
   assetId: string
   grid: ImageGridView
   mode: 'imageset' | 'colorset'
   availableLocales: { id: string; label: string }[]
-  localesFromProject?: boolean
 }) {
   const push = (next: ImageGridView) =>
     vscode.postMessage({ type: 'setGrid', assetId, grid: next })
@@ -500,10 +498,9 @@ function GridPanel({
           Localization
         </div>
         <p className="text-[10px] opacity-50 mb-2">
-          {localesFromProject
-            ? 'Languages from Localizable.xcstrings / *.lproj.'
-            : 'No project locales found — showing common languages.'}{' '}
-          Checked languages add well groups; Universal stays the fallback.
+          {availableLocales.length > 0
+            ? 'Languages from Localizable.xcstrings / *.lproj. Checked languages add well groups; Universal stays the fallback.'
+            : 'No locales found in Localizable.xcstrings or *.lproj.'}
         </p>
         <div className="flex flex-col gap-1 max-h-40 overflow-auto">
           {availableLocales.map((l) => (
@@ -525,42 +522,6 @@ function GridPanel({
             </label>
           ))}
         </div>
-        {!localesFromProject && (
-          <div className="flex gap-1 mt-2">
-            <input
-              className="min-w-0 flex-1 text-[10px] bg-[var(--vscode-input-background,#1e1e1e)] border border-[var(--vscode-input-border,#555)] px-1"
-              placeholder="Add locale id…"
-              id={`add-locale-${assetId}`}
-              onKeyDown={(e) => {
-                if (e.key !== 'Enter') return
-                const el = e.target as HTMLInputElement
-                const next = el.value.trim()
-                if (!next) return
-                if (!locales.includes(next)) {
-                  push({ ...grid, locales: [...locales, next] })
-                }
-                el.value = ''
-              }}
-            />
-            <button
-              type="button"
-              className="text-[10px] px-1 border border-[var(--vscode-button-border,#555)]"
-              onClick={() => {
-                const el = document.getElementById(
-                  `add-locale-${assetId}`,
-                ) as HTMLInputElement | null
-                const next = el?.value.trim()
-                if (!next) return
-                if (!locales.includes(next)) {
-                  push({ ...grid, locales: [...locales, next] })
-                }
-                if (el) el.value = ''
-              }}
-            >
-              Add
-            </button>
-          </div>
-        )}
       </div>
     </section>
   )
@@ -905,7 +866,6 @@ export function XcassetsApp() {
                 grid={detail.grid}
                 mode={detail.gridKind}
                 availableLocales={detail.availableLocales ?? []}
-                localesFromProject={detail.localesFromProject}
               />
             )}
             {detail.slotProperties &&

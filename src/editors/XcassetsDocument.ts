@@ -27,7 +27,6 @@ import {
   type ImageGridConfig,
 } from '../xcassets/grid'
 import {
-  COMMON_LOCALES,
   localesFromXcstringsText,
   toLocaleOptions,
 } from '../xcassets/locales'
@@ -195,10 +194,8 @@ export class XcassetsDocument implements vscode.CustomDocument {
   }
 
   /**
-   * Locales for Localization UI.
-   * Prefer project languages from `*.xcstrings` + `*.lproj`.
-   * If any are found, restrict the picker to those (plus locales already on the asset).
-   * Otherwise fall back to a common list.
+   * Locales for Localization UI from `*.xcstrings` + `*.lproj`
+   * (plus locales already on the asset). No common-language fallback.
    */
   async listAvailableLocales(): Promise<{
     locales: { id: string; label: string }[]
@@ -253,14 +250,11 @@ export class XcassetsDocument implements vscode.CustomDocument {
       for (const id of g.locales ?? []) assetLocales.add(id)
     }
 
-    if (project.size > 0) {
-      for (const id of assetLocales) project.add(id)
-      return { locales: toLocaleOptions(project), fromProject: true }
+    for (const id of assetLocales) project.add(id)
+    return {
+      locales: toLocaleOptions(project),
+      fromProject: project.size > 0,
     }
-
-    const fallback = new Set(COMMON_LOCALES.map((l) => l.id))
-    for (const id of assetLocales) fallback.add(id)
-    return { locales: toLocaleOptions(fallback), fromProject: false }
   }
 
   /** Files in the asset folder (excl. Contents.json), plus staged drops. */
@@ -298,9 +292,7 @@ export class XcassetsDocument implements vscode.CustomDocument {
   private buildViewModel(
     webview: vscode.Webview | undefined,
     folderFiles: string[],
-    availableLocales: { id: string; label: string }[] = COMMON_LOCALES.map(
-      (l) => ({ id: l.id, label: l.label }),
-    ),
+    availableLocales: { id: string; label: string }[] = [],
     localesFromProject = false,
   ): XcassetsViewModel {
     const assets = flattenAssets(this.tree).map((a) => ({
