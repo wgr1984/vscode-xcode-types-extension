@@ -1,0 +1,467 @@
+/** Device checkboxes → idiom (+ optional subtype). */
+export type DeviceId =
+  | 'universal'
+  | 'iphone'
+  | 'ipad'
+  | 'mac'
+  | 'tv'
+  | 'watch'
+  | 'car'
+  | 'vision'
+  | 'mac-catalyst'
+
+export type ImageGridConfig = {
+  devices: DeviceId[]
+  /** any | any-dark | light-dark */
+  appearances: 'any' | 'any-dark' | 'light-dark'
+  highContrast: boolean
+  individualScales: boolean
+  gamut: 'any' | 'both'
+  direction: 'fixed' | 'both'
+  widthClass: boolean
+  heightClass: boolean
+  memory: string[]
+  graphics: string[]
+  /** Checked Localization languages → `locale` on slot copies (base remains unlocalized). */
+  locales: string[]
+}
+
+export const DEVICE_OPTIONS: { id: DeviceId; label: string }[] = [
+  { id: 'universal', label: 'Universal' },
+  { id: 'iphone', label: 'iPhone' },
+  { id: 'ipad', label: 'iPad' },
+  { id: 'mac-catalyst', label: 'Mac Catalyst' },
+  { id: 'car', label: 'CarPlay' },
+  { id: 'mac', label: 'Mac' },
+  { id: 'vision', label: 'Apple Vision' },
+  { id: 'watch', label: 'Apple Watch' },
+  { id: 'tv', label: 'Apple TV' },
+]
+
+export const MEMORY_OPTIONS = ['1GB', '2GB', '3GB', '4GB'] as const
+export const GRAPHICS_OPTIONS = [
+  'metal1v2',
+  'metal1v3',
+  'metal2v2',
+  'metal2v3',
+  'metal3v1',
+  'metal3v2',
+  'metal4v1',
+] as const
+
+type Slot = Record<string, unknown>
+
+function clone<T>(v: T): T {
+  return JSON.parse(JSON.stringify(v)) as T
+}
+
+function appearancesKey(slot: Slot): string {
+  const apps = slot.appearances
+  if (!Array.isArray(apps) || apps.length === 0) return ''
+  return apps
+    .map((a) => {
+      if (!a || typeof a !== 'object') return ''
+      const o = a as { appearance?: string; value?: string }
+      return `${o.appearance ?? ''}:${o.value ?? ''}`
+    })
+    .filter(Boolean)
+    .sort()
+    .join('|')
+}
+
+/** Stable identity for filename remapping. */
+export function slotIdentity(slot: Slot): string {
+  const parts = [
+    `idiom=${slot.idiom ?? ''}`,
+    `subtype=${slot.subtype ?? ''}`,
+    `scale=${slot.scale ?? ''}`,
+    `appearances=${appearancesKey(slot)}`,
+    `gamut=${slot['display-gamut'] ?? ''}`,
+    `dir=${slot['language-direction'] ?? ''}`,
+    `w=${slot['width-class'] ?? ''}`,
+    `h=${slot['height-class'] ?? ''}`,
+    `mem=${slot.memory ?? ''}`,
+    `gfx=${slot['graphics-feature-set'] ?? ''}`,
+    `sw=${slot['screen-width'] ?? ''}`,
+    `locale=${slot.locale ?? ''}`,
+  ]
+  return parts.join(';')
+}
+
+function deviceOf(slot: Slot): DeviceId | undefined {
+  if (slot.subtype === 'mac-catalyst') return 'mac-catalyst'
+  const idiom = slot.idiom
+  if (typeof idiom !== 'string') return 'universal'
+  if (
+    idiom === 'universal' ||
+    idiom === 'iphone' ||
+    idiom === 'ipad' ||
+    idiom === 'mac' ||
+    idiom === 'tv' ||
+    idiom === 'watch' ||
+    idiom === 'car' ||
+    idiom === 'vision'
+  ) {
+    return idiom
+  }
+  return undefined
+}
+
+function scalesFor(device: DeviceId): string[] {
+  switch (device) {
+    case 'universal':
+    case 'iphone':
+      return ['1x', '2x', '3x']
+    case 'ipad':
+    case 'mac':
+    case 'tv':
+    case 'car':
+      return ['1x', '2x']
+    case 'watch':
+    case 'vision':
+    case 'mac-catalyst':
+      return ['2x']
+  }
+}
+
+function baseDeviceSlot(device: DeviceId): Slot {
+  if (device === 'mac-catalyst') {
+    return { idiom: 'ipad', subtype: 'mac-catalyst' }
+  }
+  return { idiom: device }
+}
+
+type AppearanceSpec = { appearance: string; value: string }[] | undefined
+
+function appearanceVariants(
+  mode: ImageGridConfig['appearances'],
+  highContrast: boolean,
+): AppearanceSpec[] {
+  const base: AppearanceSpec[] = []
+  if (mode === 'any') {
+    base.push(undefined)
+  } else if (mode === 'any-dark') {
+    base.push(undefined)
+    base.push([{ appearance: 'luminosity', value: 'dark' }])
+  } else {
+    base.push([{ appearance: 'luminosity', value: 'light' }])
+    base.push([{ appearance: 'luminosity', value: 'dark' }])
+  }
+  if (!highContrast) return base
+  const out: AppearanceSpec[] = [...base]
+  for (const b of base) {
+    const withHc = [
+      ...(b ?? []),
+      { appearance: 'contrast', value: 'high' },
+    ]
+    out.push(withHc)
+  }
+  return out
+}
+
+function opts(enabled: boolean, values: string[]): (string | undefined)[] {
+  return enabled ? values : [undefined]
+}
+
+/** Infer grid toggles from existing images[]. */
+export function inferImageGrid(contents: unknown): ImageGridConfig {
+  const empty: ImageGridConfig = {
+    devices: ['universal'],
+    appearances: 'any',
+    highContrast: false,
+    individualScales: true,
+    gamut: 'any',
+    direction: 'fixed',
+    widthClass: false,
+    heightClass: false,
+    memory: [],
+    graphics: [],
+    locales: [],
+  }
+  if (!contents || typeof contents !== 'object') return empty
+  const images = (contents as { images?: unknown }).images
+  if (!Array.isArray(images) || images.length === 0) return empty
+
+  const slots = images.filter(
+    (x): x is Slot => !!x && typeof x === 'object',
+  )
+  const devices = new Set<DeviceId>()
+  let hasDark = false
+  let hasLight = false
+  let hasContrast = false
+  let hasScale = false
+  let hasGamut = false
+  let hasDir = false
+  let hasW = false
+  let hasH = false
+  const memory = new Set<string>()
+  const graphics = new Set<string>()
+  const locales = new Set<string>()
+
+  for (const s of slots) {
+    const d = deviceOf(s)
+    if (d) devices.add(d)
+    if (typeof s.scale === 'string') hasScale = true
+    if (s['display-gamut']) hasGamut = true
+    if (s['language-direction']) hasDir = true
+    if (s['width-class']) hasW = true
+    if (s['height-class']) hasH = true
+    if (typeof s.memory === 'string') memory.add(s.memory)
+    if (typeof s['graphics-feature-set'] === 'string') {
+      graphics.add(String(s['graphics-feature-set']))
+    }
+    if (typeof s.locale === 'string' && s.locale) locales.add(s.locale)
+    const apps = s.appearances
+    if (Array.isArray(apps)) {
+      for (const a of apps) {
+        if (!a || typeof a !== 'object') continue
+        const o = a as { appearance?: string; value?: string }
+        if (o.appearance === 'luminosity' && o.value === 'dark') hasDark = true
+        if (o.appearance === 'luminosity' && o.value === 'light') hasLight = true
+        if (o.appearance === 'contrast') hasContrast = true
+      }
+    }
+  }
+
+  let appearances: ImageGridConfig['appearances'] = 'any'
+  if (hasLight && hasDark) appearances = 'light-dark'
+  else if (hasDark) appearances = 'any-dark'
+
+  const deviceList = [...devices]
+  return {
+    devices: deviceList.length ? deviceList : ['universal'],
+    appearances,
+    highContrast: hasContrast,
+    individualScales: hasScale,
+    gamut: hasGamut ? 'both' : 'any',
+    direction: hasDir ? 'both' : 'fixed',
+    widthClass: hasW,
+    heightClass: hasH,
+    memory: [...memory].sort(),
+    graphics: [...graphics].sort(),
+    locales: [...locales].sort(),
+  }
+}
+
+function buildSlots(config: ImageGridConfig): Slot[] {
+  const devices =
+    config.devices.length > 0 ? config.devices : (['universal'] as DeviceId[])
+  const appVars = appearanceVariants(config.appearances, config.highContrast)
+  const gamuts = opts(config.gamut === 'both', ['sRGB', 'display-P3'])
+  const dirs = opts(config.direction === 'both', [
+    'left-to-right',
+    'right-to-left',
+  ])
+  const widths = opts(config.widthClass, ['compact', 'regular'])
+  const heights = opts(config.heightClass, ['compact', 'regular'])
+  const mems: (string | undefined)[] =
+    config.memory.length > 0 ? config.memory : [undefined]
+  const gfxs: (string | undefined)[] =
+    config.graphics.length > 0 ? config.graphics : [undefined]
+  const locales: (string | undefined)[] = [
+    undefined,
+    ...(config.locales ?? []),
+  ]
+
+  const out: Slot[] = []
+  for (const device of devices) {
+    const scales: (string | undefined)[] = config.individualScales
+      ? scalesFor(device)
+      : [undefined]
+    for (const scale of scales) {
+      for (const apps of appVars) {
+        for (const gamut of gamuts) {
+          for (const dir of dirs) {
+            for (const w of widths) {
+              for (const h of heights) {
+                for (const mem of mems) {
+                  for (const gfx of gfxs) {
+                    for (const locale of locales) {
+                      const slot: Slot = { ...baseDeviceSlot(device) }
+                      if (scale) slot.scale = scale
+                      if (apps) slot.appearances = apps
+                      if (gamut) slot['display-gamut'] = gamut
+                      if (dir) slot['language-direction'] = dir
+                      if (w) slot['width-class'] = w
+                      if (h) slot['height-class'] = h
+                      if (mem) slot.memory = mem
+                      if (gfx) slot['graphics-feature-set'] = gfx
+                      if (locale) slot.locale = locale
+                      out.push(slot)
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return out
+}
+
+/** Reshape images[] from grid config; keep filenames when identity matches. */
+export function applyImageGrid(
+  contents: unknown,
+  config: ImageGridConfig,
+): unknown {
+  if (!contents || typeof contents !== 'object') {
+    throw new Error('Contents.json root must be an object')
+  }
+  const root = clone(contents) as Record<string, unknown>
+  const prev = Array.isArray(root.images) ? (root.images as Slot[]) : []
+  const byId = new Map<string, string>()
+  for (const s of prev) {
+    if (!s || typeof s !== 'object') continue
+    if (typeof s.filename === 'string') byId.set(slotIdentity(s), s.filename)
+  }
+  const next = buildSlots(config).map((s) => {
+    const fn = byId.get(slotIdentity(s))
+    return fn ? { ...s, filename: fn } : s
+  })
+  root.images = next
+  const props = {
+    ...((root.properties && typeof root.properties === 'object'
+      ? root.properties
+      : {}) as Record<string, unknown>),
+  }
+  if ((config.locales ?? []).length > 0) props.localizable = true
+  else delete props.localizable
+  if (Object.keys(props).length === 0) delete root.properties
+  else root.properties = props
+  return root
+}
+
+/** Colorset grid: devices / appearances / gamut / locales. */
+export type ColorGridConfig = {
+  devices: DeviceId[]
+  appearances: 'any' | 'any-dark' | 'light-dark'
+  highContrast: boolean
+  gamut: 'any' | 'both'
+  locales: string[]
+}
+
+export function colorSlotIdentity(slot: Slot): string {
+  return [
+    `idiom=${slot.idiom ?? ''}`,
+    `subtype=${slot.subtype ?? ''}`,
+    `appearances=${appearancesKey(slot)}`,
+    `gamut=${slot['display-gamut'] ?? ''}`,
+    `locale=${slot.locale ?? ''}`,
+  ].join(';')
+}
+
+const DEFAULT_COLOR = {
+  'color-space': 'srgb',
+  components: {
+    red: '0.000',
+    green: '0.000',
+    blue: '0.000',
+    alpha: '1.000',
+  },
+}
+
+export function inferColorGrid(contents: unknown): ColorGridConfig {
+  const empty: ColorGridConfig = {
+    devices: ['universal'],
+    appearances: 'any',
+    highContrast: false,
+    gamut: 'any',
+    locales: [],
+  }
+  if (!contents || typeof contents !== 'object') return empty
+  const colors = (contents as { colors?: unknown }).colors
+  if (!Array.isArray(colors) || colors.length === 0) return empty
+  const slots = colors.filter((x): x is Slot => !!x && typeof x === 'object')
+  const devices = new Set<DeviceId>()
+  let hasDark = false
+  let hasLight = false
+  let hasContrast = false
+  let hasGamut = false
+  const locales = new Set<string>()
+  for (const s of slots) {
+    const d = deviceOf(s)
+    if (d) devices.add(d)
+    if (s['display-gamut']) hasGamut = true
+    if (typeof s.locale === 'string' && s.locale) locales.add(s.locale)
+    const apps = s.appearances
+    if (Array.isArray(apps)) {
+      for (const a of apps) {
+        if (!a || typeof a !== 'object') continue
+        const o = a as { appearance?: string; value?: string }
+        if (o.appearance === 'luminosity' && o.value === 'dark') hasDark = true
+        if (o.appearance === 'luminosity' && o.value === 'light') hasLight = true
+        if (o.appearance === 'contrast') hasContrast = true
+      }
+    }
+  }
+  let appearances: ColorGridConfig['appearances'] = 'any'
+  if (hasLight && hasDark) appearances = 'light-dark'
+  else if (hasDark) appearances = 'any-dark'
+  const deviceList = [...devices]
+  return {
+    devices: deviceList.length ? deviceList : ['universal'],
+    appearances,
+    highContrast: hasContrast,
+    gamut: hasGamut ? 'both' : 'any',
+    locales: [...locales].sort(),
+  }
+}
+
+function buildColorSlots(config: ColorGridConfig): Slot[] {
+  const devices =
+    config.devices.length > 0 ? config.devices : (['universal'] as DeviceId[])
+  const appVars = appearanceVariants(config.appearances, config.highContrast)
+  const gamuts = opts(config.gamut === 'both', ['sRGB', 'display-P3'])
+  const locales: (string | undefined)[] = [
+    undefined,
+    ...(config.locales ?? []),
+  ]
+  const out: Slot[] = []
+  for (const device of devices) {
+    for (const apps of appVars) {
+      for (const gamut of gamuts) {
+        for (const locale of locales) {
+          const slot: Slot = { ...baseDeviceSlot(device) }
+          if (apps) slot.appearances = apps
+          if (gamut) slot['display-gamut'] = gamut
+          if (locale) slot.locale = locale
+          out.push(slot)
+        }
+      }
+    }
+  }
+  return out
+}
+
+/** Reshape colors[]; keep `color` payload when identity matches. */
+export function applyColorGrid(
+  contents: unknown,
+  config: ColorGridConfig,
+): unknown {
+  if (!contents || typeof contents !== 'object') {
+    throw new Error('Contents.json root must be an object')
+  }
+  const root = clone(contents) as Record<string, unknown>
+  const prev = Array.isArray(root.colors) ? (root.colors as Slot[]) : []
+  const byId = new Map<string, unknown>()
+  for (const s of prev) {
+    if (!s || typeof s !== 'object') continue
+    if (s.color !== undefined) byId.set(colorSlotIdentity(s), s.color)
+  }
+  root.colors = buildColorSlots(config).map((s) => {
+    const color = byId.get(colorSlotIdentity(s)) ?? clone(DEFAULT_COLOR)
+    return { ...s, color }
+  })
+  const props = {
+    ...((root.properties && typeof root.properties === 'object'
+      ? root.properties
+      : {}) as Record<string, unknown>),
+  }
+  if ((config.locales ?? []).length > 0) props.localizable = true
+  else delete props.localizable
+  if (Object.keys(props).length === 0) delete root.properties
+  else root.properties = props
+  return root
+}

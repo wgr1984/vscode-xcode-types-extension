@@ -1,8 +1,8 @@
 # Vision
 
-**Product:** VS Code extension (also Cursor) for `.plist`, `.strings`, `.xcstrings`, `.xcconfig`.
+**Product:** VS Code extension (also Cursor) for `.plist`, `.strings`, `.xcstrings`, `.xcconfig`, `.xcassets`.
 
-**Why:** Text editing these formats is error-prone. Want table UI + highlighting.
+**Why:** Text editing these formats is error-prone. Want table UI + highlighting (and Xcode-like catalog UI for assets).
 
 ## Scope (v1)
 
@@ -12,6 +12,7 @@
 | `.strings` | yes | yes | key → value rows |
 | `.xcstrings` | yes | yes | String Catalog JSON → flat/filterable table |
 | `.xcconfig` | yes | yes | key/value (+ includes as rows or separate section) |
+| `.xcassets` | catalog UI | no | CustomEditor: list + wells; open via command |
 
 ## Out of scope (v1)
 

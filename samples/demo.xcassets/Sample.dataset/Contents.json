@@ -1,0 +1,16 @@
+{
+  "data": [
+    {
+      "filename": "sample.txt",
+      "idiom": "universal"
+    },
+    {
+      "filename": "chart.svg",
+      "idiom": "universal"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

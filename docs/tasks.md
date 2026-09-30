@@ -99,3 +99,32 @@ Spec: [raw-edit-mode-design](./superpowers/specs/2026-09-27-raw-edit-mode-design
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
 | T9.1 | Workspace diagnostics scan | todo | opt-in; see [ideas § Backlog](./ideas.md#workspace-diagnostics-deferred) |
+
+## Phase 10 — `.xcassets` support
+
+Research: [research/xcassets.md](./research/xcassets.md)  
+Spec: (pending) `superpowers/specs/2026-09-27-xcassets-design.md`  
+**Hard fact:** catalog = folder bundle + many subtypes; not a `CustomTextEditor` / `FormatAdapter`.
+
+| ID | Task | Status | Notes |
+|----|------|--------|-------|
+| T10.0 | Deep research subtypes + Contents.json | done | Apple archive + real catalogs |
+| T10.1 | Scope / UX (**C** Xcode-like) | done | wells + drag |
+| T10.2 | Subtype set (**3** common day one) | done | imageset, appiconset, colorset, dataset, launchimage; exotic stub |
+| T10.3 | Files (**D**) + JSON (**P**) | done | drag-copy; pretty stringify churn OK |
+| T10.4 | Design approve §§1–4 | done | see design-draft |
+| T10.5 | Formal design spec | done | approved 2026-09-27 |
+| T10.6 | Implementation plan | done | `superpowers/plans/2026-09-27-xcassets.md` |
+| T10.7 | Sample `demo.xcassets` | done | |
+| T10.8 | CustomEditorProvider + catalog model + webview | done | wells, drop, color, add/delete |
+| T10.9 | Tests + contributes (command / context) | done | F5 smoke: you |
+| T10.10 | Deep research Attributes (set vs slot) | done | [xcassets-attributes.md](./research/xcassets-attributes.md) |
+| T10.11 | Attributes v2 — set properties (compression, ODR, …) | done | |
+| T10.12 | Attributes v2 — grid reshape (Devices/Appearances/…) | done | `src/xcassets/grid.ts` |
+| T10.13 | Attributes v2 — per-slot panel | done | click well → slot attrs |
+| T10.14 | Colorset grid + slot (appearances/gamut/space) | done | |
+| T10.15 | Reveal selected asset folder in Explorer | done | `revealInExplorer` on nav select |
+| T10.16 | Fix add asset (`window.prompt` broken in webview) | done | host `showInputBox` |
+| T10.17 | App Icon inspector (iOS/macOS/watchOS/appearances) | done | `appIconGrid.ts` |
+| T10.18 | Filename field file suggestions from asset folder | done | datalist + dropdown |
+| T10.19 | Localization language checkboxes + locale well groups | done | research + grid locales |

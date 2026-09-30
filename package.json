@@ -1,7 +1,7 @@
 {
   "name": "xcode-types",
   "displayName": "Xcode Types",
-  "description": "Table editors and highlighting for plist, strings, xcstrings, xcconfig",
+  "description": "Table editors and highlighting for plist, strings, xcstrings, xcconfig, plus Asset Catalog viewer",
   "version": "0.0.1",
   "publisher": "local",
   "engines": {
@@ -71,8 +71,46 @@
           }
         ],
         "priority": "default"
+      },
+      {
+        "viewType": "xcodeTypes.xcassets",
+        "displayName": "Asset Catalog",
+        "selector": [
+          {
+            "filenamePattern": "**/*.xcassets/Contents.json"
+          }
+        ],
+        "priority": "default"
       }
     ],
+    "commands": [
+      {
+        "command": "xcodeTypes.openXcassets",
+        "title": "Xcode Types: Open Asset Catalog"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "xcodeTypes.openXcassets",
+        "key": "enter",
+        "mac": "enter",
+        "when": "filesExplorerFocus && !inputFocus && explorerResourceIsFolder && resourceFilename =~ /\\.xcassets$/"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "xcodeTypes.openXcassets",
+          "when": "explorerResourceIsFolder && resourceFilename =~ /\\.xcassets$/",
+          "group": "navigation@1"
+        }
+      ]
+    },
+    "configurationDefaults": {
+      "workbench.editorAssociations": {
+        "**/*.xcassets/Contents.json": "xcodeTypes.xcassets"
+      }
+    },
     "grammars": [
       {
         "language": "plist",
@@ -97,7 +135,7 @@
     ]
   },
   "scripts": {
-    "build": "vite build -c vite.extension.ts && vite build -c vite.webview.ts",
+    "build": "vite build -c vite.extension.ts && vite build -c vite.webview.ts && vite build -c vite.xcassets.ts",
     "watch": "vite build -c vite.extension.ts --watch",
     "test": "vitest run",
     "package": "npm run build && vsce package --no-dependencies"
