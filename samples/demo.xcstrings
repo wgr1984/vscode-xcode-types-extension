@@ -17,7 +17,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": ""
+            "value": "hello"
           }
         },
         "de": {
@@ -33,7 +33,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "ABC"
+            "value": "ABC2"
           }
         }
       }

@@ -55,7 +55,9 @@ type Props = {
 
 export function RawEditor({ text, languageId, errorLines, onChange }: Props) {
   const [local, setLocal] = useState(text)
-  const dirty = useRef(false)
+  const lastEmitted = useRef(text)
+  const epoch = useRef(0)
+  const pasteFlush = useRef(false)
   const taRef = useRef<HTMLTextAreaElement>(null)
   const preRef = useRef<HTMLPreElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -65,7 +67,12 @@ export function RawEditor({ text, languageId, errorLines, onChange }: Props) {
   )
 
   useEffect(() => {
-    if (!dirty.current) setLocal(text)
+    if (text === lastEmitted.current) return
+    // undo/redo/external — drop pending paste/type emit
+    epoch.current += 1
+    setLocal(text)
+    lastEmitted.current = text
+    if (timer.current) clearTimeout(timer.current)
   }, [text])
 
   const lang = prismLangFor(languageId)
@@ -112,14 +119,15 @@ export function RawEditor({ text, languageId, errorLines, onChange }: Props) {
     return () => ro.disconnect()
   }, [local, html])
 
-  const emit = (next: string) => {
+  const emit = (next: string, delayMs: number) => {
     setLocal(next)
-    dirty.current = true
+    const e = epoch.current
     if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(() => {
+      if (e !== epoch.current) return // stale after undo/host sync
+      lastEmitted.current = next
       onChange(next)
-      dirty.current = false
-    }, 120)
+    }, delayMs)
   }
 
   useEffect(() => {
@@ -141,7 +149,14 @@ export function RawEditor({ text, languageId, errorLines, onChange }: Props) {
           ref={taRef}
           value={local}
           spellCheck={false}
-          onChange={(e) => emit(e.target.value)}
+          onPaste={() => {
+            pasteFlush.current = true
+          }}
+          onChange={(e) => {
+            const delay = pasteFlush.current ? 0 : 120
+            pasteFlush.current = false
+            emit(e.target.value, delay)
+          }}
           className="raw-editor__layer raw-editor__textarea"
         />
       </div>

@@ -94,6 +94,17 @@ Spec: [raw-edit-mode-design](./superpowers/specs/2026-09-27-raw-edit-mode-design
 | T8.5 | Plist XML parse issues (underline) | done | trailing junk + fail offset |
 | T8.6 | xcstrings JSON parse issues | done | SyntaxError line/col |
 
+## Phase 8b — Undo/redo
+
+Plan: [2026-10-01-undo-redo](./superpowers/plans/2026-10-01-undo-redo.md)
+
+| ID | Task | Status | Notes |
+|----|------|--------|-------|
+| T8b.1 | Mirror-only + gen stale-drop + paste flush | done | v5 |
+| T8b.2 | recentOwn 2s (no stack wipe on big paste) | done | |
+| T8b.3 | Persist mirror stacks across re-open (URI map) | done | wipe if tip drift |
+| T8b.4 | F5 smoke paste + leave/re-enter undo | todo | reload after build |
+
 ## Phase 9 — Backlog (deferred)
 
 | ID | Task | Status | Notes |

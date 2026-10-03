@@ -5,9 +5,13 @@ import { Table } from './Table'
 
 const vscodeApi = acquireVsCodeApi()
 
-type HostMsg =
-  | { type: 'init'; model: TableModel; text: string; languageId: string }
-  | { type: 'update'; model: TableModel; text: string; languageId: string }
+type HostMsg = {
+  type: 'init' | 'update'
+  model: TableModel
+  text: string
+  languageId: string
+  gen: number
+}
 
 type Mode = 'table' | 'raw'
 
@@ -16,14 +20,13 @@ export function App() {
   const [text, setText] = useState('')
   const [languageId, setLanguageId] = useState('plaintext')
   const [mode, setMode] = useState<Mode>('table')
-  const editingRef = useRef(false)
+  const genRef = useRef(0)
 
   useEffect(() => {
     const handler = (event: MessageEvent<HostMsg>) => {
       const msg = event.data
-      // keep local order/focus while typing in a cell
-      if (msg.type === 'update' && editingRef.current) return
       if (msg.type === 'init' || msg.type === 'update') {
+        genRef.current = msg.gen
         setModel(msg.model)
         setText(msg.text)
         setLanguageId(msg.languageId)
@@ -34,6 +37,23 @@ export function App() {
     return () => window.removeEventListener('message', handler)
   }, [])
 
+  // Controlled inputs swallow Cmd/Ctrl+Z — host mirror stack only (empty = no-op).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey
+      if (!mod) return
+      const key = e.key.toLowerCase()
+      const undo = key === 'z' && !e.shiftKey
+      const redo = (key === 'z' && e.shiftKey) || key === 'y'
+      if (!undo && !redo) return
+      e.preventDefault()
+      e.stopPropagation()
+      vscodeApi.postMessage({ type: undo ? 'undo' : 'redo' })
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [])
+
   if (!model) {
     return <div className="p-3 opacity-70">Loading…</div>
   }
@@ -42,12 +62,12 @@ export function App() {
 
   const onChange = (rows: Row[]) => {
     setModel({ ...model, rows })
-    vscodeApi.postMessage({ type: 'edit', rows })
+    vscodeApi.postMessage({ type: 'edit', rows, gen: genRef.current })
   }
 
   const onRawChange = (next: string) => {
     setText(next)
-    vscodeApi.postMessage({ type: 'editRaw', text: next })
+    vscodeApi.postMessage({ type: 'editRaw', text: next, gen: genRef.current })
   }
 
   return (
@@ -89,8 +109,6 @@ export function App() {
             disabled={disabled}
             onChange={onChange}
             onEditingChange={(v) => {
-              editingRef.current = v
-              // own writes skip doc→webview; reparse once focus leaves table
               if (!v) vscodeApi.postMessage({ type: 'refresh' })
             }}
           />
